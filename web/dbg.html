@@ -1,0 +1,11 @@
+<!doctype html><html><body style="margin:0">
+<iframe id="f" src="/?autostart=0,campaign" width="1100" height="720" style="border:0"></iframe>
+<script>
+setTimeout(() => {
+  const w = document.getElementById('f').contentWindow;
+  w.eval(`
+    for (let i = 0; i < 300; i++) { Renderer.updateReveal(1/30); Renderer.updateTrains(1/30); Renderer.updatePeople(1/30); }
+    Renderer.draw(UI.ctx, Game);
+  `);
+}, 3000);
+</script></body></html>

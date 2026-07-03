@@ -32,7 +32,6 @@ const Renderer = {
   tod: null,         // active time-of-day config
   railPaths: [],     // built rail polylines for the train animation
   trains: [],        // animated trains { path, d, speed, dir }
-  vehicles: [],      // ambient cars & buses on non-route roads
   people: [],        // ambient pixel people near map features
 
   /** Pre-render static backgrounds for a level: one bake WITH the enemy
@@ -47,7 +46,6 @@ const Renderer = {
     const geo = layout.geo;
     this.initTrains(geo);
     this.initPeople(geo, layout, level);
-    this.initVehicles(geo, paths);
   },
 
   _bake(level, layout, paths, withRoute) {
@@ -282,11 +280,8 @@ const Renderer = {
     // ---- Singapore street furniture along the route ----
     this.streetFurniture(g, geo, layout, paths, rng);
 
-    // ---- real parks get real trees (dense canopy, not just a tint) ----
-    this.parkTrees(g, geo, layout, paths, theme, rng);
-
     // ---- scenery decorations on open ground ----
-    const decos = { hdb: 26, trees: 44, jungle: 56, coast: 34, shophouse: 22 }[theme.deco];
+    const decos = { hdb: 10, trees: 12, jungle: 12, coast: 10, shophouse: 8 }[theme.deco];
     let placed = 0, tries = 0;
     while (placed < decos && tries < 1600) {
       tries++;
@@ -347,94 +342,6 @@ const Renderer = {
     for (const lm of (layout.landmarks || [])) if (dist(x, y, lm.x, lm.y) < 60) return false;
     for (const line of geo.rail) if (distToLinePts(line, x, y) < 22) return false;
     return true;
-  },
-
-  /* ---------- ambient traffic (cars & buses on non-route roads) ---------- */
-
-  initVehicles(geo, paths) {
-    this.vehicles = [];
-    const CAR_COLORS = ['#d8dade', '#3f9bd8', '#e5533c', '#f2b632', '#8892a0', '#4a4e58', '#f0ede2'];
-    for (const r of geo.roads) {
-      if (r.c >= 4) continue;                       // no traffic on service lanes
-      if (this.vehicles.length >= 30) break;
-      const bp = buildPath(r.p);
-      if (bp.total < 90) continue;
-      // skip roads the enemy route was carved over (they're dirt now)
-      let clear = 0, samples = 0;
-      for (let d = 0; d <= bp.total; d += 36) {
-        const p = pointAt(bp, d);
-        samples++;
-        let minD = Infinity;
-        for (const path of paths) minD = Math.min(minD, distToPath(path, p.x, p.y));
-        if (minD > 32) clear++;
-      }
-      if (!samples || clear / samples < 0.75) continue;
-      const count = Math.min(3, Math.max(1, Math.round(bp.total / 300)));
-      for (let i = 0; i < count && this.vehicles.length < 30; i++) {
-        const bus = Math.random() < 0.22;
-        this.vehicles.push({
-          path: bp,
-          d: Math.random() * bp.total,
-          dir: Math.random() < 0.5 ? 1 : -1,
-          speed: bus ? 40 + Math.random() * 8 : 55 + Math.random() * 28,
-          len: bus ? 17 : 9,
-          wid: bus ? 6 : 5,
-          bus,
-          color: bus ? (Math.random() < 0.5 ? '#3fae6a' : '#c73a3a') : CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)],
-          wait: Math.random() * 2,
-          off: Math.min(7, ROAD_W[r.c] / 4 + 0.5),  // keep-left lane offset
-        });
-      }
-    }
-  },
-
-  updateVehicles(dt) {
-    for (const v of this.vehicles) {
-      if (v.wait > 0) { v.wait -= dt; continue; }
-      v.d += v.speed * v.dir * dt;
-      if (v.d > v.path.total - 4) { v.d = v.path.total - 4; v.dir = -1; v.wait = 0.6 + Math.random() * 2.5; }
-      if (v.d < 4) { v.d = 4; v.dir = 1; v.wait = 0.6 + Math.random() * 2.5; }
-    }
-  },
-
-  drawVehicles(ctx) {
-    for (const v of this.vehicles) {
-      const a = pointAt(v.path, Math.max(0, v.d - v.len / 2));
-      const b = pointAt(v.path, Math.min(v.path.total, v.d + v.len / 2));
-      // travel direction (flip when returning) — drive on the LEFT
-      let tx = (b.x - a.x), ty = (b.y - a.y);
-      const tl = Math.hypot(tx, ty) || 1;
-      tx = tx / tl * v.dir; ty = ty / tl * v.dir;
-      const cx = (a.x + b.x) / 2 + ty * v.off, cy = (a.y + b.y) / 2 - tx * v.off;
-      const ang = Math.atan2(ty, tx);
-      const L = v.len, W = v.wid;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(ang);
-      // shadow
-      ctx.fillStyle = 'rgba(0,0,0,.25)';
-      ctx.fillRect(-L / 2 + 1, -W / 2 + 2, L, W);
-      // body
-      ctx.fillStyle = v.color;
-      ctx.fillRect(-L / 2, -W / 2, L, W);
-      if (v.bus) {
-        // roof stripe + window row
-        ctx.fillStyle = 'rgba(255,255,255,.85)';
-        ctx.fillRect(-L / 2 + 1, -W / 2 + 1, L - 2, 2);
-        ctx.fillStyle = '#324a5e';
-        for (let wx = -L / 2 + 2; wx < L / 2 - 3; wx += 3) ctx.fillRect(wx, -1, 2, 2);
-        ctx.fillRect(L / 2 - 2, -W / 2 + 1, 1, W - 2);   // windscreen
-      } else {
-        // windscreen + rear window
-        ctx.fillStyle = '#324a5e';
-        ctx.fillRect(L / 2 - 4, -W / 2 + 1, 2, W - 2);
-        ctx.fillRect(-L / 2 + 1, -W / 2 + 1, 2, W - 2);
-        // roof highlight
-        ctx.fillStyle = 'rgba(255,255,255,.35)';
-        ctx.fillRect(-L / 2 + 3, -W / 2 + 1, L - 7, 1);
-      }
-      ctx.restore();
-    }
   },
 
   /* ---------- level-intro reveal: the road is carved into the
@@ -587,7 +494,7 @@ const Renderer = {
     };
     const add = (ax, ay, r, kind, n, opts = {}) => {
       for (let i = 0; i < n; i++) {
-        if (this.people.length >= 64) return;
+        if (this.people.length >= 28) return;
         this.people.push({
           kind, ax, ay, r,
           x: ax + (rng() - 0.5) * r, y: ay + (rng() - 0.5) * r * 0.7,
@@ -600,10 +507,10 @@ const Renderer = {
       }
     };
 
-    // HDB playgrounds: kids chasing each other + a watching parent
+    // HDB playgrounds: a kid at play + a watching parent
     if (!night) {
       for (const [px, py] of (geo.plays || [])) {
-        add(px, py + 4, 30, 'kid', 2 + Math.floor(rng() * 2), { speed: 22 });
+        add(px, py + 4, 30, 'kid', 1, { speed: 22 });
         add(px + 20, py + 8, 12, 'walker', 1, { speed: 6 });
       }
     }
@@ -614,7 +521,7 @@ const Renderer = {
       if (bb.w * bb.h < 900) continue;
       const [cx, cy] = centroid(pc.p);
       const rr = Math.max(bb.w, bb.h) / 2 - 6;
-      add(cx, cy, rr, 'player', night ? 2 : 4, { speed: 30, poly: pc.p, shirts: ['#e5533c', '#3f9bd8'] });
+      add(cx, cy, rr, 'player', night ? 1 : 2, { speed: 30, poly: pc.p, shirts: ['#e5533c', '#3f9bd8'] });
     }
 
     // condo pools: bobbing swimmers
@@ -623,7 +530,7 @@ const Renderer = {
         const bb = this.polyBounds(p);
         if (bb.w * bb.h < 260) continue;
         const [cx, cy] = centroid(p);
-        add(cx, cy, Math.min(bb.w, bb.h) / 2, 'swim', 1 + Math.floor(rng() * 2), { speed: 5, poly: p });
+        add(cx, cy, Math.min(bb.w, bb.h) / 2, 'swim', 1, { speed: 5, poly: p });
       }
     }
 
@@ -632,15 +539,15 @@ const Renderer = {
       const bb = this.polyBounds(p);
       if (bb.w * bb.h < 1500) continue;
       const [cx, cy] = centroid(p);
-      add(cx, cy, Math.max(bb.w, bb.h) / 2 - 8, 'walker', 2, { speed: 9, poly: p });
+      add(cx, cy, Math.max(bb.w, bb.h) / 2 - 8, 'walker', 1, { speed: 9, poly: p });
     }
 
     // parks: a few walkers on open ground
     let parkPeople = 0;
     for (const p of (geo.parks || [])) {
-      if (parkPeople >= 6) break;
+      if (parkPeople >= 3) break;
       const bb = this.polyBounds(p);
-      for (let tries = 0; tries < 14 && parkPeople < 6; tries++) {
+      for (let tries = 0; tries < 14 && parkPeople < 3; tries++) {
         const x = bb.x + rng() * bb.w, y = bb.y + rng() * bb.h;
         if (!pointInPolyR(p, x, y)) continue;
         if (!this.openGroundLoose(geo, layout, [], x, y)) continue;
@@ -681,39 +588,39 @@ const Renderer = {
       const x = Math.round(p.x), y = Math.round(p.y);
       if (p.kind === 'swim') {
         // bobbing head, arms + ripple in the water
-        const bob = Math.sin(t * 2.2 + p.seed) * 0.9;
+        const bob = Math.sin(t * 2.2 + p.seed) * 1.4;
         ctx.fillStyle = 'rgba(255,255,255,.45)';
-        ctx.fillRect(x - 4, y + 2, 9, 1);
+        ctx.fillRect(x - 7, y + 4, 15, 2);
         ctx.fillStyle = p.skin;
-        ctx.fillRect(x - 1, y - 2 + bob, 3, 3);
-        ctx.fillRect(x - 3, y + bob, 1, 1);
-        ctx.fillRect(x + 3, y + bob, 1, 1);
+        ctx.fillRect(x - 2, y - 4 + bob, 5, 5);
+        ctx.fillRect(x - 5, y + bob, 2, 2);
+        ctx.fillRect(x + 4, y + bob, 2, 2);
         continue;
       }
       const kid = p.kind === 'kid';
       const moving = p.wait <= 0;
       const rate = p.kind === 'player' ? 13 : kid ? 11 : 7;
       const step = moving ? Math.sin(t * rate + p.seed) : 0;
-      const hop = kid && moving ? -Math.abs(Math.sin(t * rate + p.seed)) * 1.4 : 0;
-      const h = kid ? 7 : 9;             // total height, y = feet
+      const hop = kid && moving ? -Math.abs(Math.sin(t * rate + p.seed)) * 2.5 : 0;
+      const h = kid ? 14 : 19;           // total height, y = feet (NSman-sized)
       // shadow
       ctx.fillStyle = 'rgba(0,0,0,.22)';
-      ctx.fillRect(x - 2, y, 5, 1);
+      ctx.fillRect(x - 4, y, 9, 2);
       // legs (alternating)
       ctx.fillStyle = '#2c2c34';
-      ctx.fillRect(x - 1 + (step > 0.3 ? -1 : 0), y - 2 + hop, 1, 2);
-      ctx.fillRect(x + 1 + (step < -0.3 ? 1 : 0), y - 2 + hop, 1, 2);
+      ctx.fillRect(x - 2 + (step > 0.3 ? -2 : 0), y - 4 + hop, 2, 4);
+      ctx.fillRect(x + 1 + (step < -0.3 ? 2 : 0), y - 4 + hop, 2, 4);
       // body
       ctx.fillStyle = p.shirt;
-      ctx.fillRect(x - 1, y - h + 3 + hop, 3, h - 5);
+      ctx.fillRect(x - 3, y - h + 6 + hop, 7, h - 10);
       // arms swing when moving
       if (moving) {
-        ctx.fillRect(x - 2, y - h + 4 + hop + (step > 0 ? 1 : 0), 1, 2);
-        ctx.fillRect(x + 2, y - h + 4 + hop + (step < 0 ? 1 : 0), 1, 2);
+        ctx.fillRect(x - 5, y - h + 8 + hop + (step > 0 ? 2 : 0), 2, 4);
+        ctx.fillRect(x + 4, y - h + 8 + hop + (step < 0 ? 2 : 0), 2, 4);
       }
       // head
       ctx.fillStyle = p.skin;
-      ctx.fillRect(x - 1, y - h + hop, 3, 3);
+      ctx.fillRect(x - 2, y - h + hop, 5, 6);
     }
   },
 
@@ -1044,9 +951,25 @@ const Renderer = {
     g.stroke();
   },
 
+  /* Enemy arrival point — a soft sci-fi "beam-down" light spot on the
+     ground instead of a gadget-looking portal. Baked part is the glow
+     pool; the animated shimmer rings are added per-frame in draw().  */
   portal(g, x, y) {
     x = clamp(x, 20, 940); y = clamp(y, 20, 580);
-    Sprites.draw(g, 'portal', x, y, 3);
+    g.save();
+    // elliptical ground pool of light (top-down perspective)
+    g.translate(x, y); g.scale(1, 0.72);
+    const rg = g.createRadialGradient(0, 0, 2, 0, 0, 38);
+    rg.addColorStop(0, 'rgba(255,255,255,1)');
+    rg.addColorStop(0.28, 'rgba(215,240,255,.85)');
+    rg.addColorStop(0.6, 'rgba(170,220,255,.45)');
+    rg.addColorStop(1, 'rgba(150,210,255,0)');
+    g.fillStyle = rg;
+    g.beginPath(); g.arc(0, 0, 38, 0, 7); g.fill();
+    // hot core
+    g.fillStyle = 'rgba(255,255,255,.95)';
+    g.beginPath(); g.arc(0, 0, 8, 0, 7); g.fill();
+    g.restore();
   },
 
   /* Temporary Operations Command — the field HQ the player defends.
@@ -1205,54 +1128,23 @@ const Renderer = {
     }
   },
 
+  /* sparse scenery props on open ground (no trees — kept clean) */
   deco(g, kind, x, y, rng) {
     switch (kind) {
       case 'trees':
-        Sprites.draw(g, rng() < 0.55 ? 'tree' : rng() < 0.5 ? 'rain_tree' : 'bush', x, y, 3);
-        break;
       case 'jungle':
-        Sprites.draw(g, ['tree', 'rain_tree', 'palm', 'bush'][Math.floor(rng() * 4)], x, y, 3 + Math.floor(rng() * 2));
+      case 'hdb':
+      case 'shophouse':
+        Sprites.draw(g, rng() < 0.6 ? 'bench' : 'rock', x, y, 2.2);
         break;
       case 'coast':
-        Sprites.draw(g, ['palm', 'palm', 'rock', 'bush'][Math.floor(rng() * 4)], x, y, 3);
+        Sprites.draw(g, 'rock', x, y, 3);
         break;
-      case 'hdb':
-        Sprites.draw(g, ['rain_tree', 'tree', 'bench', 'bush'][Math.floor(rng() * 4)], x, y, 2.6);
-        break;
-      case 'shophouse':
-        Sprites.draw(g, ['rain_tree', 'bench', 'bush'][Math.floor(rng() * 3)], x, y, 2.6);
-        break;
-    }
-  },
-
-  /* Fill real park / forest polygons with clusters of trees so green
-     spaces read as lush canopy instead of a bare tinted lawn. */
-  parkTrees(g, geo, layout, paths, theme, rng) {
-    const pool = theme.deco === 'coast'
-      ? ['palm', 'tree', 'bush', 'palm']
-      : ['tree', 'rain_tree', 'bush', 'tree'];
-    let total = 0;
-    for (const p of (geo.parks || [])) {
-      const bb = this.polyBounds(p);
-      if (bb.w < 24 || bb.h < 24) continue;
-      const want = Math.min(40, Math.max(4, Math.round((bb.w * bb.h) / 3400)));
-      let placed = 0, tries = 0;
-      while (placed < want && tries < want * 16 && total < 220) {
-        tries++;
-        const x = bb.x + rng() * bb.w, y = bb.y + rng() * bb.h;
-        if (x < 20 || x > 940 || y < 46 || y > 580) continue;
-        if (!pointInPolyR(p, x, y)) continue;
-        if (!this.openGroundLoose(geo, layout, paths, x, y)) continue;
-        if (!this.clearOfBuildings(geo, x, y, 10)) continue;
-        const s = pool[Math.floor(rng() * pool.length)];
-        Sprites.draw(g, s, x, y, s === 'bush' ? 2.4 : 2.6 + rng() * 1.2);
-        placed++; total++;
-      }
     }
   },
 
   /* Singapore street furniture along the enemy route: bus stops, lamp
-     posts and the odd roadside rain tree — the heartland look. */
+     posts and benches — the heartland look. */
   streetFurniture(g, geo, layout, paths, rng) {
     for (const path of paths) {
       const bp = buildPath(path.points);
@@ -1265,9 +1157,8 @@ const Renderer = {
         if (!this.openGroundLoose(geo, layout, paths, x, y)) continue;
         if (!this.clearOfBuildings(geo, x, y, 8)) continue;
         const r = rng();
-        if (r < 0.30) Sprites.draw(g, 'bus_stop', x, y, 2.6);
-        else if (r < 0.55) Sprites.draw(g, 'lamp_post', x, y - 4, 2.4);
-        else if (r < 0.8) Sprites.draw(g, 'rain_tree', x, y, 2.8);
+        if (r < 0.35) Sprites.draw(g, 'bus_stop', x, y, 2.6);
+        else if (r < 0.7) Sprites.draw(g, 'lamp_post', x, y - 4, 2.4);
         else Sprites.draw(g, 'bench', x, y, 2.2);
       }
     }
@@ -1298,8 +1189,31 @@ const Renderer = {
     ctx.imageSmoothingEnabled = false;
     this.drawBackground(ctx);   // static bake (+ intro route-reveal)
 
-    // ambient cars & buses on the untouched roads
-    this.drawVehicles(ctx);
+    // spawn-point light shimmer (expanding rings over the baked glow)
+    if (game.paths) {
+      const tNow = performance.now() / 1000;
+      for (let i = 0; i < game.paths.length; i++) {
+        const [px0, py0] = game.paths[i].points[0];
+        const px = clamp(px0, 20, 940), py = clamp(py0, 20, 580);
+        for (let k = 0; k < 2; k++) {
+          const ph = (tNow * 0.45 + i * 0.37 + k * 0.5) % 1;
+          const r = 8 + ph * 26;
+          ctx.strokeStyle = `rgba(210,240,255,${(0.55 * (1 - ph)).toFixed(3)})`;
+          ctx.lineWidth = 1.5;
+          ctx.save();
+          ctx.translate(px, py); ctx.scale(1, 0.72);
+          ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.stroke();
+          ctx.restore();
+        }
+        // gently pulsing core
+        const pul = 0.55 + 0.35 * Math.sin(tNow * 3 + i);
+        ctx.fillStyle = `rgba(255,255,255,${pul.toFixed(3)})`;
+        ctx.save();
+        ctx.translate(px, py); ctx.scale(1, 0.72);
+        ctx.beginPath(); ctx.arc(0, 0, 5, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+    }
 
     // animated MRT trains on the viaducts
     this.drawTrains(ctx);

@@ -17,7 +17,6 @@ function frame(now) {
     if (!Game.paused) {
       Renderer.updateTrains(raw);   // MRT trains keep rolling
       Renderer.updatePeople(raw);   // ambient people keep strolling
-      Renderer.updateVehicles(raw); // cars & buses keep driving
       Renderer.updateReveal(raw);   // intro route-carving animation
     }
     Renderer.draw(UI.ctx, Game);

@@ -1299,49 +1299,12 @@ Sprites.def('p_talisman', { o: '#5c4a10', y: '#ffe066', r: '#c62828' }, [
 
 /* ================= SCENERY ================= */
 
-Sprites.def('tree', { o: '#10260e', g: '#3f8a34', d: '#2c6a24', l: '#5cae44', t: '#5f3a16' }, [
-  "...oooo...",
-  "..ogglgo..",
-  ".oggglggo.",
-  ".oglgggdgo",
-  ".ogggldggo",
-  "..odggdgo.",
-  "...oggdo..",
-  "....otto..",
-  "....otto..",
-  "...oottoo.",
-]);
-
-Sprites.def('palm', { o: '#123014', g: '#4fae44', d: '#2c7a28', t: '#8a5a2a', k: '#5f3a16' }, [
-  "og.o...o.go",
-  ".ogo.o.ogo.",
-  "..ogogogo..",
-  "....oto....",
-  "....oto....",
-  "...okto....",
-  "...oto.....",
-  "..ootoo....",
-]);
-
 Sprites.def('bush', { o: '#12300f', g: '#4c9a3c', l: '#66b850' }, [
   "..oooo..",
   ".oglggo.",
   "ogggglgo",
   "oglggggo",
   ".oooooo.",
-]);
-
-/* Rain tree — the umbrella-canopy roadside icon of Singapore */
-Sprites.def('rain_tree', { o: '#10260e', g: '#4c9a3c', d: '#357a28', l: '#68bc50', t: '#6e4a20' }, [
-  "..oooooooo..",
-  ".oglgggglgo.",
-  "ogggldggglgo",
-  "oglgggdlgggo",
-  ".ogdlggggdo.",
-  "..oo.ot.oo..",
-  ".....oto....",
-  ".....oto....",
-  "....ootoo...",
 ]);
 
 /* HDB void-deck playground — red tower + yellow slide + blue swing */
@@ -1400,21 +1363,6 @@ Sprites.def('rock', { o: '#2c3238', s: '#8a929c', d: '#5f6870' }, [
   "ossdssdo",
   "osdsssso",
   ".oooooo.",
-]);
-
-Sprites.def('portal', { o: '#2a0a44', p: '#7a2fae', v: '#a85ae0', k: '#12041e', w: '#e6c8ff' }, [
-  "...oooooo...",
-  "..oppppppo..",
-  ".oppvvvvppo.",
-  ".opvkkkkvpo.",
-  "opvkwwwwkvpo",
-  "opvkwkkwkvpo",
-  "opvkwkkwkvpo",
-  "opvkwwwwkvpo",
-  ".opvkkkkvpo.",
-  ".oppvvvvppo.",
-  "..oppppppo..",
-  "...oooooo...",
 ]);
 
 /* Temporary Operations Command — field HQ tent, radio mast, sandbag ring */
