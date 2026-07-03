@@ -37,10 +37,10 @@ const UI = {
     };
     $('btn-quit').onclick = () => { this.show('levels'); this.renderLevels(); Game.running = false; };
 
-    $('btn-pause-retry').onclick = () => { this.togglePause(false); this.startLevel(Game.levelIndex); };
+    $('btn-pause-retry').onclick = () => { this.togglePause(false); this.startLevel(Game.levelIndex, Game.mode); };
     $('btn-pause-map').onclick = () => { this.togglePause(false); Game.running = false; this.show('levels'); this.renderLevels(); };
 
-    $('btn-end-retry').onclick = () => { $('end-overlay').classList.add('hidden'); this.startLevel(Game.levelIndex); };
+    $('btn-end-retry').onclick = () => { $('end-overlay').classList.add('hidden'); this.startLevel(Game.levelIndex, Game.mode); };
     $('btn-end-map').onclick = () => { $('end-overlay').classList.add('hidden'); this.show('levels'); this.renderLevels(); };
     $('btn-end-next').onclick = () => {
       $('end-overlay').classList.add('hidden');
@@ -69,7 +69,7 @@ const UI = {
   /* ---------- level select ---------- */
 
   renderLevels() {
-    $('total-stars').textContent = `★ ${Progress.totalStars()} / ${LEVELS.length * 3}`;
+    $('total-stars').textContent = `★ ${Progress.totalStars()} / ${Progress.maxStars()}`;
     const grid = $('level-grid');
     grid.innerHTML = '';
     LEVELS.forEach((lv, i) => {
@@ -82,27 +82,75 @@ const UI = {
       }
       const unlocked = Progress.unlocked(i);
       const stars = Progress.starsFor(i);
+      const chal = Progress.challengesUnlocked(i);
       const card = document.createElement('div');
       card.className = 'level-card' + (unlocked ? '' : ' locked');
+      const badges = chal
+        ? `<span class="lv-badge ${Progress.heroicDone(i) ? 'done' : ''}" title="Heroic Challenge">🔥</span>` +
+          `<span class="lv-badge ${Progress.ironDone(i) ? 'done' : ''}" title="Iron Challenge">🛡</span>`
+        : '';
       card.innerHTML = `
         <div class="lv-num">LEVEL ${i + 1}</div>
         <div class="lv-name">${unlocked ? lv.name : '🔒 ' + lv.name}</div>
-        <div class="lv-stars">${'★'.repeat(stars)}<span style="color:#45586a">${'★'.repeat(3 - stars)}</span></div>
+        <div class="lv-stars">${'★'.repeat(stars)}<span style="color:#45586a">${'★'.repeat(3 - stars)}</span>${badges}</div>
         <div class="lv-diff diff-${lv.diff}">${lv.diff.toUpperCase()}</div>`;
-      if (unlocked) card.onclick = () => this.startLevel(i);
+      if (unlocked) card.onclick = () => chal ? this.showModePicker(i) : this.startLevel(i, 'campaign');
       grid.appendChild(card);
     });
   },
 
-  startLevel(i) {
+  /* Kingdom Rush-style mode picker (after ★★★ campaign clear) */
+  showModePicker(i) {
+    const lv = LEVELS[i];
+    const wrap = $('mode-overlay');
+    const stars = Progress.starsFor(i);
+    const rows = Object.keys(MODES).map(key => {
+      const m = MODES[key];
+      const done = key === 'campaign'
+        ? `★ ${stars}/3`
+        : (key === 'heroic' ? Progress.heroicDone(i) : Progress.ironDone(i)) ? '★ done' : '☆ not yet';
+      const extra = key === 'iron'
+        ? `<div class="mode-extra">Towers: ${ironTowers(i).map(t => TOWER_TYPES[t].name).join(', ')}</div>`
+        : '';
+      return `
+        <button class="mode-btn mode-${key}" data-mode="${key}">
+          <span class="mode-ico">${m.icon}</span>
+          <span class="mode-body">
+            <span class="mode-name">${m.name}</span>
+            <span class="mode-desc">${m.desc}</span>${extra}
+          </span>
+          <span class="mode-done">${done}</span>
+        </button>`;
+    }).join('');
+    wrap.innerHTML = `
+      <div class="end-box mode-box">
+        <h2>${lv.name}</h2>
+        <p class="mode-sub">Choose your challenge</p>
+        ${rows}
+        <button class="big-btn secondary" id="btn-mode-cancel">← BACK</button>
+      </div>`;
+    wrap.classList.remove('hidden');
+    wrap.querySelectorAll('.mode-btn').forEach(b => {
+      b.onclick = () => { wrap.classList.add('hidden'); this.startLevel(i, b.dataset.mode); };
+    });
+    $('btn-mode-cancel').onclick = () => wrap.classList.add('hidden');
+    wrap.onclick = e => { if (e.target === wrap) wrap.classList.add('hidden'); };
+  },
+
+  startLevel(i, mode = 'campaign') {
     Sound.ensure();
     this.hidePopups();
     $('end-overlay').classList.add('hidden');
     $('pause-overlay').classList.add('hidden');
-    Game.start(i);
+    $('mode-overlay').classList.add('hidden');
+    Game.start(i, mode);
     $('btn-speed').textContent = '1×';
     this.show('game');
-    this.banner(`${LEVELS[i].name}`);
+    const mtag = mode === 'campaign' ? '' : ` · ${MODES[mode].name}`;
+    this.banner(`${LEVELS[i].name}${mtag}`);
+    if (mode === 'iron') {
+      setTimeout(() => this.banner(`🛡 Only: ${Game.allowedTowers.map(t => TOWER_TYPES[t].name).join(' + ')}`), 2400);
+    }
   },
 
   /* ---------- canvas taps ---------- */
@@ -164,6 +212,7 @@ const UI = {
     const el = $('build-menu');
     el.innerHTML = '';
     for (const key of Object.keys(TOWER_TYPES)) {
+      if (!Game.towerAllowed(key)) continue;
       const def = TOWER_TYPES[key];
       const cost = def.levels[0].cost;
       const btn = document.createElement('button');
@@ -241,16 +290,33 @@ const UI = {
   },
 
   showEnd(won, stars) {
-    $('end-title').textContent = won ? '🎉 Victory!' : '💀 Defeat';
-    $('end-stars').innerHTML = won
-      ? '★'.repeat(stars) + `<span class="off">${'★'.repeat(3 - stars)}</span>`
-      : '<span class="off">★★★</span>';
     const lv = LEVELS[Game.levelIndex];
-    $('end-msg').textContent = won
-      ? `${lv.name} is safe! ${Game.lives}/${Game.maxLives} lives kept.`
-      : `The hantus overran ${lv.name}. Try a new strategy, can one!`;
+    const mode = Game.mode;
+    $('end-title').textContent = won
+      ? (mode === 'campaign' ? '🎉 Victory!' : `${MODES[mode].icon} Challenge Complete!`)
+      : '💀 Defeat';
+    if (mode === 'campaign') {
+      $('end-stars').innerHTML = won
+        ? '★'.repeat(stars) + `<span class="off">${'★'.repeat(3 - stars)}</span>`
+        : '<span class="off">★★★</span>';
+    } else {
+      $('end-stars').innerHTML = won ? '★' : '<span class="off">★</span>';
+    }
+    let msg;
+    if (won && mode === 'campaign') {
+      msg = `${lv.name} is safe! ${Game.lives}/${Game.maxLives} lives kept.`;
+      if (stars >= 3 && !Progress.heroicDone(Game.levelIndex) && !Progress.ironDone(Game.levelIndex))
+        msg += ' Heroic & Iron Challenges unlocked!';
+    } else if (won) {
+      msg = `${MODES[mode].name} conquered — bonus star earned!`;
+    } else {
+      msg = mode === 'campaign'
+        ? `The hantus overran ${lv.name}. Try a new strategy, can one!`
+        : `One life only — ${MODES[mode].name} shows no mercy. Try again!`;
+    }
+    $('end-msg').textContent = msg;
     const next = Game.levelIndex + 1;
-    $('btn-end-next').style.display = won && next < LEVELS.length ? '' : 'none';
+    $('btn-end-next').style.display = won && mode === 'campaign' && next < LEVELS.length ? '' : 'none';
     setTimeout(() => $('end-overlay').classList.remove('hidden'), won ? 600 : 400);
   },
 

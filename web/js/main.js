@@ -14,6 +14,7 @@ function frame(now) {
     // multiple fixed-ish substeps for fast-forward stability
     const steps = Game.speed;
     for (let i = 0; i < steps; i++) Game.update(raw);
+    if (!Game.paused) Renderer.updateTrains(raw); // MRT trains keep rolling
     Renderer.draw(UI.ctx, Game);
     UI.refreshHud();
   }
@@ -23,3 +24,21 @@ requestAnimationFrame(frame);
 
 // unlock audio on first interaction
 window.addEventListener('pointerdown', () => Sound.ensure(), { once: true });
+
+// dev helpers: ?autostart=LEVEL,MODE jumps into a level;
+// ?dev3stars=N grants ★★★ up to level N; ?showmodes=N opens the mode picker
+const _qs = new URLSearchParams(location.search);
+if (_qs.get('dev3stars') !== null) {
+  const upTo = parseInt(_qs.get('dev3stars')) || 0;
+  for (let i = 0; i <= upTo; i++) Progress.complete(i, 3);
+}
+const _auto = _qs.get('autostart');
+if (_auto) {
+  const [li, mode] = _auto.split(',');
+  Sound.muted = true;
+  UI.startLevel(parseInt(li) || 0, mode || 'campaign');
+} else if (_qs.get('showmodes') !== null) {
+  Sound.muted = true;
+  UI.show('levels'); UI.renderLevels();
+  UI.showModePicker(parseInt(_qs.get('showmodes')) || 0);
+}

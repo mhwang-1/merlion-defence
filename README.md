@@ -5,7 +5,13 @@ real neighbourhoods — Ang Mo Kio Central, Changi Village, Tiong Bahru, Merlion
 and more — against mysterious creatures from South East Asian, South Asian and
 East Asian folklore.
 
-Pure HTML5 Canvas + vanilla JS. No build step, no external assets, no backend.
+Pure HTML5 Canvas + vanilla JS. No build step, no backend.
+
+**Real maps:** every level is drawn from actual OpenStreetMap geometry — the
+real road network, HDB block footprints, shopping malls, MRT viaducts, rivers,
+reservoirs and coastline of each neighbourhood, with enemy paths routed along
+the real streets. MRT trains animate along the real rail viaducts.
+(Map data © OpenStreetMap contributors, ODbL.)
 
 ## Run with Docker Compose
 
@@ -44,6 +50,29 @@ an “act” covering one region of the island as the invasion sweeps south:
 
 Levels unlock sequentially; earn up to ★★★ per level based on lives kept.
 Progress is saved in your browser (localStorage).
+
+### 🏆 Game modes (Kingdom Rush style)
+Each level has three modes. **Campaign** is the story mode. Beat it with a
+★★★ rating to unlock two extra challenges, each worth one bonus star
+(5★ max per level, 150 total):
+
+- **⚔ Campaign** — the standard waves; keep lives for up to ★★★
+- **🔥 Heroic Challenge** — 6 elite waves drawn from the level's toughest
+  creatures. **One life.**
+- **🛡 Iron Challenge** — one long unbroken siege. **One life**, and only a
+  fixed subset of towers may be built (shown before you start).
+
+### 🗺 Regenerating the maps
+The baked geometry lives in `web/js/data/geo.js`. To re-fetch from
+OpenStreetMap (e.g. after tweaking a level spec):
+
+```bash
+node tools/fetch-geo.js            # all 30 levels (Overpass API, cached)
+node tools/fetch-geo.js --level 4  # one level
+node tools/fetch-geo.js --preview  # also writes SVG previews to tools/preview/
+```
+
+Raw Overpass responses are cached in `tools/cache/`.
 
 ### 🗼 Towers (urban Singapore)
 - **📡 Cell-Base Tower** — rapid 5G zaps, hits ground & air (physical)

@@ -18,7 +18,7 @@
     <button class="big-btn" id="btn-play">▶ &nbsp;PLAY</button>
     <button class="big-btn secondary" id="btn-help">📖 &nbsp;HOW TO PLAY</button>
     <button class="big-btn secondary" id="btn-reset">🗑 &nbsp;RESET PROGRESS</button>
-    <p class="credits">30 levels · 4 towers · 14 folklore creatures</p>
+    <p class="credits">30 real neighbourhoods · 3 modes · 4 towers · 14 folklore creatures</p>
   </div>
 </div>
 
@@ -34,6 +34,8 @@
         <p>Tap a <b>concrete pad</b> beside the road to build a tower. Tap a tower to <b>upgrade</b>, <b>sell</b> or move its <b>rally point</b> (NS Camp only).</p>
         <h3>⏩ Waves</h3>
         <p>Press <b>NEXT WAVE</b> early to earn bonus gold. Use the ⏸ / ⏩ buttons to pause or fast-forward.</p>
+        <h3>🏆 Challenges</h3>
+        <p>Beat a level with ★★★ to unlock its <b>🔥 Heroic</b> and <b>🛡 Iron</b> Challenges — elite waves or one long siege, one life only, each worth a bonus ★.</p>
       </div>
       <div>
         <h3>🗼 Towers</h3>
@@ -57,6 +59,8 @@
     <div id="total-stars" class="total-stars">★ 0 / 90</div>
   </div>
   <div id="level-grid" class="level-grid"></div>
+  <!-- Mode picker (Campaign / Heroic / Iron) -->
+  <div id="mode-overlay" class="hidden"></div>
 </div>
 
 <!-- ============ GAME ============ -->
@@ -122,6 +126,7 @@
 <script src="js/audio.js"></script>
 <script src="js/data/enemies.js"></script>
 <script src="js/data/towers.js"></script>
+<script src="js/data/geo.js"></script>
 <script src="js/data/levels.js"></script>
 <script src="js/render.js"></script>
 <script src="js/game.js"></script>

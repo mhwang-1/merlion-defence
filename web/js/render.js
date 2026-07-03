@@ -1,27 +1,36 @@
-/* ===== Canvas renderer: pixel-art Singapore scenery ===== */
+/* ===== Canvas renderer: real Singapore geometry, pixel-art styling ===== */
 'use strict';
 
 const THEMES = {
-  town:   { grass: '#6aa03c', grass2: '#5c8f33', road: '#8a8f98', roadEdge: '#63686f', deco: 'hdb' },
-  park:   { grass: '#79b04a', grass2: '#69a03e', road: '#b09878', roadEdge: '#8a7156', deco: 'trees' },
-  forest: { grass: '#4c7a2c', grass2: '#3d6822', road: '#94795c', roadEdge: '#6d573c', deco: 'jungle' },
-  coast:  { grass: '#8cb455', grass2: '#7ca648', road: '#d4bd90', roadEdge: '#b09b6e', deco: 'coast' },
-  river:  { grass: '#6aa03c', grass2: '#5c8f33', road: '#8a8f98', roadEdge: '#63686f', deco: 'shophouse' },
+  town:   { grass: '#6aa03c', grass2: '#5c8f33', deco: 'hdb' },
+  park:   { grass: '#79b04a', grass2: '#69a03e', deco: 'trees' },
+  forest: { grass: '#4c7a2c', grass2: '#3d6822', deco: 'jungle' },
+  coast:  { grass: '#8cb455', grass2: '#7ca648', deco: 'coast' },
+  river:  { grass: '#6aa03c', grass2: '#5c8f33', deco: 'shophouse' },
 };
 
+/* road stroke widths by OSM class (0 motorway/trunk … 4 service) */
+const ROAD_W     = [30, 26, 20, 14, 7];
+const ROAD_EDGE  = '#63686f';
+const ROAD_FILL  = '#8a8f98';
+const MINOR_FILL = '#9aa0a8';
+
 const Renderer = {
-  bg: null, // cached background canvas
+  bg: null,          // cached background canvas
+  railPaths: [],     // built rail polylines for the train animation
+  trains: [],        // animated trains { path, d, speed, dir }
 
   /** Pre-render static background for a level. */
   buildBackground(level, layout, paths) {
     const theme = THEMES[level.theme] || THEMES.town;
+    const geo = layout.geo;
     const c = document.createElement('canvas');
     c.width = 960; c.height = 600;
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
     const rng = makeRng(4242 + LEVELS.indexOf(level) * 101);
 
-    // grass base + chunky pixel patches
+    // ---- grass base + chunky pixel patches ----
     g.fillStyle = theme.grass;
     g.fillRect(0, 0, 960, 600);
     for (let i = 0; i < 260; i++) {
@@ -31,85 +40,237 @@ const Renderer = {
       g.fillRect(x, y, w, 8);
     }
 
-    // water bodies
-    if (layout.water) {
-      for (const [x, y, w, h, label] of layout.water) {
-        g.fillStyle = '#2e7bb4';
-        g.fillRect(x, y, w, h);
-        g.fillStyle = '#3f97d4';
-        g.fillRect(x, y, w, Math.min(6, h));
-        // pixel wave flecks
-        g.fillStyle = 'rgba(255,255,255,.35)';
-        for (let i = 0; i < (w * h) / 3200; i++) {
-          const wx = x + Math.floor(rng() * (w / 8)) * 8;
-          const wy = y + 8 + Math.floor(rng() * ((h - 12) / 8)) * 8;
-          g.fillRect(wx, wy, 12, 3);
-        }
-        if (label) {
-          g.font = 'bold 13px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
-          g.fillStyle = 'rgba(255,255,255,.5)';
-          g.fillText(label.toUpperCase(), x + w / 2, y + h / 2);
+    // ---- real parks / forests (slightly darker green) ----
+    for (const p of geo.parks) {
+      g.fillStyle = 'rgba(38,84,18,.30)';
+      this.fillPoly(g, p);
+    }
+
+    // ---- the sea (from real coastline) ----
+    if (geo.sea && geo.sea.length) {
+      g.fillStyle = '#2e7bb4';
+      for (const [x, y, w, h] of geo.sea) g.fillRect(x, y, w, h);
+      // pixel wave flecks
+      g.fillStyle = 'rgba(255,255,255,.30)';
+      for (const [x, y, w, h] of geo.sea) {
+        for (let i = 0; i < (w * h) / 5200; i++) {
+          g.fillRect(x + Math.floor(rng() * (w / 8)) * 8, y + Math.floor(rng() * (h / 8)) * 8, 12, 3);
         }
       }
     }
 
-    // roads
+    // ---- real rivers / lakes / reservoirs ----
+    for (const w of geo.water) {
+      g.fillStyle = '#2e7bb4';
+      this.fillPoly(g, w);
+      g.strokeStyle = '#3f97d4'; g.lineWidth = 2;
+      this.strokePoly(g, w);
+    }
+
+    // ---- real roads, small to large so big roads sit on top ----
+    const byClass = [[], [], [], [], []];
+    for (const r of geo.roads) byClass[r.c].push(r);
+    for (let cls = 4; cls >= 0; cls--) {
+      for (const r of byClass[cls]) {
+        this.strokePath(g, r.p, ROAD_W[cls] + 4, ROAD_EDGE);
+      }
+      for (const r of byClass[cls]) {
+        this.strokePath(g, r.p, ROAD_W[cls], cls >= 3 ? MINOR_FILL : ROAD_FILL);
+      }
+      // lane dashes on major roads
+      if (cls <= 2) {
+        g.save();
+        g.setLineDash([10, 12]);
+        for (const r of byClass[cls]) this.strokePath(g, r.p, 2, 'rgba(255,255,255,.35)');
+        g.restore();
+      }
+    }
+
+    // ---- the ENEMY ROUTE: highlighted so it reads as "the path" ----
     for (const path of paths) {
-      this.strokePath(g, path.points, 46, theme.roadEdge);
-      this.strokePath(g, path.points, 38, theme.road);
+      this.strokePath(g, path.points, 40, '#6d5a38');
+      this.strokePath(g, path.points, 32, '#b09878');
       g.save();
       g.setLineDash([12, 10]);
-      this.strokePath(g, path.points, 3, 'rgba(255,255,255,.5)');
+      this.strokePath(g, path.points, 3, 'rgba(255,244,200,.75)');
       g.restore();
     }
 
-    // entrance / exit markers
+    // ---- real building footprints (pixel-art flat-roof style) ----
+    const PAL = ['#d8d2c4', '#e2d4b0', '#c8d2ae', '#c0ccd4', '#d8c4ba'];
+    for (const b of geo.buildings) {
+      const col = b.lm ? '#ef8354' : PAL[Math.floor(rng() * PAL.length)];
+      // drop shadow
+      g.save();
+      g.translate(3, 4);
+      g.fillStyle = 'rgba(0,0,0,.20)';
+      this.fillPoly(g, b.p);
+      g.restore();
+      g.fillStyle = col;
+      this.fillPoly(g, b.p);
+      g.strokeStyle = 'rgba(0,0,0,.30)'; g.lineWidth = 1.5;
+      this.strokePoly(g, b.p);
+      // window texture on bigger footprints
+      const bb = this.polyBounds(b.p);
+      if (bb.w > 26 && bb.h > 20) {
+        g.save();
+        g.beginPath();
+        this.tracePoly(g, b.p);
+        g.clip();
+        g.fillStyle = 'rgba(70,90,102,.55)';
+        for (let wy = bb.y + 6; wy < bb.y + bb.h - 5; wy += 10)
+          for (let wx = bb.x + 6; wx < bb.x + bb.w - 5; wx += 11)
+            g.fillRect(wx, wy, 4, 4);
+        g.restore();
+      }
+    }
+
+    // ---- rail viaduct (MRT) ----
+    for (const line of geo.rail) {
+      this.strokePath(g, line, 14, '#4a5058');       // viaduct deck shadow
+      this.strokePath(g, line, 10, '#7c848c');       // deck
+      g.save();
+      g.setLineDash([4, 10]);
+      this.strokePath(g, line, 10, '#5a6068');       // sleepers
+      g.restore();
+      this.strokePath(g, line, 2, '#3c4248');        // rails
+      // support piers
+      const bp = buildPath(line);
+      for (let d = 26; d < bp.total; d += 64) {
+        const p = pointAt(bp, d);
+        g.fillStyle = '#5a6068';
+        g.fillRect(p.x - 3, p.y - 3, 6, 6);
+      }
+    }
+
+    // ---- entrance / exit markers ----
     for (const path of paths) {
       const p0 = path.points[0], pn = path.points[path.points.length - 1];
       this.portal(g, p0[0], p0[1]);
       this.mrtExit(g, pn[0], pn[1]);
     }
 
-    // build pads
+    // ---- build pads (high contrast so they read against real buildings) ----
     for (const [x, y] of layout.spots) {
-      g.fillStyle = '#5f6870';
-      g.fillRect(x - 22, y - 12, 44, 28);
-      g.fillStyle = '#9aa4ae';
-      g.fillRect(x - 22, y - 16, 44, 28);
-      g.fillStyle = '#b8c2cc';
-      g.fillRect(x - 18, y - 12, 36, 20);
-      g.strokeStyle = '#5f6870'; g.lineWidth = 2;
-      g.strokeRect(x - 22, y - 16, 44, 28);
-      g.fillStyle = '#6d7880';
-      g.fillRect(x - 5, y - 7, 10, 3);
-      g.fillRect(x - 7, y - 2, 14, 3);
-      g.fillRect(x - 5, y + 3, 10, 3);
+      g.fillStyle = 'rgba(0,0,0,.3)';
+      g.fillRect(x - 22, y - 12, 46, 30);
+      g.fillStyle = '#8a6d3a';
+      g.fillRect(x - 23, y - 17, 46, 30);
+      g.fillStyle = '#d8b96a';
+      g.fillRect(x - 20, y - 14, 40, 24);
+      // hazard corners
+      g.fillStyle = '#403014';
+      g.fillRect(x - 20, y - 14, 8, 4); g.fillRect(x - 20, y - 14, 4, 8);
+      g.fillRect(x + 12, y - 14, 8, 4); g.fillRect(x + 16, y - 14, 4, 8);
+      g.fillRect(x - 20, y + 6, 8, 4);  g.fillRect(x - 20, y + 2, 4, 8);
+      g.fillRect(x + 12, y + 6, 8, 4);  g.fillRect(x + 16, y + 2, 4, 8);
+      // hammer glyph
+      g.fillStyle = '#7a5c22';
+      g.fillRect(x - 6, y - 6, 12, 4);
+      g.fillRect(x - 2, y - 2, 4, 9);
     }
 
-    // landmarks (real-place anchors)
+    // ---- landmarks (real-place anchors) ----
     if (layout.landmarks) {
       for (const lm of layout.landmarks) this.landmark(g, lm, rng);
     }
 
-    // scenery decorations away from roads/pads/landmarks
-    const decos = { hdb: 9, trees: 14, jungle: 16, coast: 10, shophouse: 9 }[theme.deco];
+    // ---- scenery decorations on open ground ----
+    const decos = { hdb: 0, trees: 12, jungle: 16, coast: 8, shophouse: 0 }[theme.deco];
     let placed = 0, tries = 0;
-    while (placed < decos && tries < 400) {
+    while (placed < decos && tries < 500) {
       tries++;
       const x = 40 + rng() * 880, y = 60 + rng() * 500;
-      let ok = true;
-      for (const path of paths) if (distToPath(path, x, y) < 62) { ok = false; break; }
-      if (ok) for (const [sx, sy] of layout.spots) if (dist(x, y, sx, sy) < 58) { ok = false; break; }
-      if (ok && layout.water) for (const [wx, wy, ww, wh] of layout.water)
-        if (x > wx - 24 && x < wx + ww + 24 && y > wy - 50 && y < wy + wh + 24) { ok = false; break; }
-      if (ok && layout.landmarks) for (const lm of layout.landmarks)
-        if (dist(x, y, lm.x, lm.y) < 80) { ok = false; break; }
-      if (!ok) continue;
+      if (!this.openGround(geo, layout, paths, x, y)) continue;
       this.deco(g, theme.deco, x, y, rng);
       placed++;
     }
 
     this.bg = c;
+    this.initTrains(geo);
+  },
+
+  openGround(geo, layout, paths, x, y) {
+    for (const path of paths) if (distToPath(path, x, y) < 46) return false;
+    for (const [sx, sy] of layout.spots) if (dist(x, y, sx, sy) < 48) return false;
+    for (const r of geo.roads) if (r.c <= 3 && distToLinePts(r.p, x, y) < ROAD_W[r.c] / 2 + 12) return false;
+    for (const [wx, wy, ww, wh] of (geo.sea || []))
+      if (x > wx - 16 && x < wx + ww + 16 && y > wy - 30 && y < wy + wh + 16) return false;
+    for (const w of geo.water) if (pointInPolyR(w, x, y)) return false;
+    for (const b of geo.buildings) if (pointInPolyR(b.p, x, y)) return false;
+    for (const lm of (layout.landmarks || [])) if (dist(x, y, lm.x, lm.y) < 60) return false;
+    for (const line of geo.rail) if (distToLinePts(line, x, y) < 22) return false;
+    return true;
+  },
+
+  /* ---------- MRT trains (animated on real viaducts) ---------- */
+
+  initTrains(geo) {
+    this.railPaths = geo.rail.map(line => buildPath(line));
+    this.trains = [];
+    for (const rp of this.railPaths) {
+      if (rp.total < 200) continue;
+      this.trains.push({ path: rp, d: Math.random() * rp.total, speed: 120, dir: 1, wait: 0 });
+      if (rp.total > 700) {
+        this.trains.push({ path: rp, d: Math.random() * rp.total, speed: 120, dir: -1, wait: 2.5 });
+      }
+    }
+  },
+
+  updateTrains(dt) {
+    for (const t of this.trains) {
+      if (t.wait > 0) { t.wait -= dt; continue; }
+      t.d += t.speed * t.dir * dt;
+      if (t.d > t.path.total + 90) { t.d = t.path.total + 90; t.dir = -1; t.wait = 1.5 + Math.random() * 3; }
+      if (t.d < -90) { t.d = -90; t.dir = 1; t.wait = 1.5 + Math.random() * 3; }
+    }
+  },
+
+  drawTrains(ctx) {
+    const CAR = 26, CARS = 3;
+    for (const t of this.trains) {
+      for (let ci = 0; ci < CARS; ci++) {
+        const dm = t.d - ci * (CAR + 3) * t.dir;
+        if (dm < 6 || dm > t.path.total - 6) continue;
+        const a = pointAt(t.path, Math.max(0, dm - CAR / 2));
+        const b = pointAt(t.path, Math.min(t.path.total, dm + CAR / 2));
+        const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(ang);
+        // body
+        ctx.fillStyle = 'rgba(0,0,0,.25)';
+        ctx.fillRect(-CAR / 2 + 2, -4 + 3, CAR, 9);
+        ctx.fillStyle = '#e8ebee';
+        ctx.fillRect(-CAR / 2, -5, CAR, 10);
+        ctx.fillStyle = ci === 0 || ci === CARS - 1 ? '#c62828' : '#37474f'; // NSL red stripe
+        ctx.fillRect(-CAR / 2, -5, CAR, 3);
+        // windows
+        ctx.fillStyle = '#4a6a88';
+        for (let wx = -CAR / 2 + 3; wx < CAR / 2 - 3; wx += 6) ctx.fillRect(wx, -1, 4, 4);
+        ctx.restore();
+      }
+    }
+  },
+
+  /* ---------- poly / path helpers ---------- */
+
+  tracePoly(g, pts) {
+    g.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+    g.closePath();
+  },
+  fillPoly(g, pts) {
+    g.beginPath(); this.tracePoly(g, pts); g.fill();
+  },
+  strokePoly(g, pts) {
+    g.beginPath(); this.tracePoly(g, pts); g.stroke();
+  },
+  polyBounds(pts) {
+    let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+    for (const [x, y] of pts) { x1 = Math.min(x1, x); y1 = Math.min(y1, y); x2 = Math.max(x2, x); y2 = Math.max(y2, y); }
+    return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
   },
 
   strokePath(g, pts, w, color) {
@@ -148,44 +309,35 @@ const Renderer = {
     const { x, y, kind, label } = lm;
     g.textAlign = 'center'; g.textBaseline = 'middle';
     switch (kind) {
-      case 'building': {
-        const w = lm.w || 70, h = lm.h || 50;
-        g.fillStyle = 'rgba(0,0,0,.25)';
-        g.fillRect(x - w / 2 + 5, y - h / 2 + 5, w, h);
-        g.fillStyle = lm.color || '#78909c';
-        g.fillRect(x - w / 2, y - h / 2, w, h);
-        g.fillStyle = 'rgba(255,255,255,.75)';
-        for (let fy = y - h / 2 + 7; fy < y + h / 2 - 8; fy += 11)
-          for (let fx = x - w / 2 + 6; fx < x + w / 2 - 8; fx += 12)
-            g.fillRect(fx, fy, 6, 6);
-        g.fillStyle = 'rgba(0,0,0,.35)';
-        g.fillRect(x - w / 2, y + h / 2 - 5, w, 5);
+      case 'building':   // real footprint already drawn (lm flag); just badge it
+        g.fillStyle = 'rgba(255,235,59,.9)';
+        g.fillRect(x - 3, y - 10, 6, 6);
+        g.beginPath();
+        g.moveTo(x - 5, y - 4); g.lineTo(x + 5, y - 4); g.lineTo(x, y + 3);
+        g.closePath(); g.fill();
         break;
-      }
       case 'market': {
-        const w = lm.w || 80, h = lm.h || 40;
+        const w = lm.w || 60, h = lm.h || 32;
         g.fillStyle = 'rgba(0,0,0,.25)';
         g.fillRect(x - w / 2 + 4, y - h / 2 + 4, w, h);
         g.fillStyle = lm.color || '#8d6e63';
         g.fillRect(x - w / 2, y - h / 2 + 8, w, h - 8);
-        // striped awning
         for (let i = 0; i < w; i += 12) {
           g.fillStyle = (i / 12) % 2 ? '#e8e4da' : '#c62828';
           g.fillRect(x - w / 2 + i, y - h / 2, Math.min(12, w - i), 10);
         }
         g.fillStyle = '#3c2c1c';
-        g.fillRect(x - 8, y + h / 2 - 14, 16, 14);
+        g.fillRect(x - 8, y + h / 2 - 12, 16, 12);
         break;
       }
       case 'mosque': {
-        g.fillStyle = '#c8a44a';                       // golden dome
+        g.fillStyle = '#c8a44a';
         g.beginPath(); g.arc(x, y - 10, 22, Math.PI, 0); g.fill();
         g.fillRect(x - 26, y - 10, 52, 30);
         g.fillStyle = '#e8dcc0';
         g.fillRect(x - 26, y - 6, 52, 26);
         g.fillStyle = '#8a6d2f';
         g.fillRect(x - 5, y + 4, 10, 16);
-        // minarets
         g.fillStyle = '#e8dcc0';
         g.fillRect(x - 40, y - 26, 8, 46);
         g.fillRect(x + 32, y - 26, 8, 46);
@@ -195,7 +347,6 @@ const Renderer = {
         break;
       }
       case 'pagoda': {
-        g.fillStyle = '#8e1f1f';
         for (let i = 0; i < 3; i++) {
           const w = 56 - i * 14, ry = y + 8 - i * 16;
           g.fillStyle = '#8e1f1f';
@@ -207,10 +358,7 @@ const Renderer = {
         g.fillRect(x - 3, y - 48, 6, 8);
         break;
       }
-      case 'merlion': {
-        Sprites.draw(g, 'merlion', x, y, 4);
-        break;
-      }
+      case 'merlion': Sprites.draw(g, 'merlion', x, y, 4); break;
       case 'tower': {
         g.fillStyle = '#c8b060';
         g.fillRect(x - 6, y - 40, 12, 46);
@@ -265,7 +413,7 @@ const Renderer = {
         break;
       }
       case 'playground': {
-        g.fillStyle = '#e8b13a';                        // dragon head
+        g.fillStyle = '#e8b13a';
         g.fillRect(x - 24, y - 18, 30, 22);
         g.fillStyle = '#c53030';
         g.fillRect(x - 30, y - 10, 8, 8);
@@ -291,33 +439,6 @@ const Renderer = {
 
   deco(g, kind, x, y, rng) {
     switch (kind) {
-      case 'hdb': {
-        // mini HDB slab block, pixel style
-        const w = 48 + Math.floor(rng() * 3) * 8, h = 48 + Math.floor(rng() * 5) * 8;
-        const col = ['#e8e4da', '#f0d8a8', '#c2d8a0', '#a8d0e0'][Math.floor(rng() * 4)];
-        g.fillStyle = 'rgba(0,0,0,.22)';
-        g.fillRect(x - w / 2 + 5, y - h + 6, w, h);
-        g.fillStyle = col;
-        g.fillRect(x - w / 2, y - h, w, h);
-        g.fillStyle = '#4c5c66';
-        for (let fy = y - h + 6; fy < y - 8; fy += 10)
-          for (let fx = x - w / 2 + 5; fx < x + w / 2 - 6; fx += 10)
-            g.fillRect(fx, fy, 5, 5);
-        g.fillStyle = '#c53030';
-        g.fillRect(x - w / 2, y - h - 5, w, 5);
-        break;
-      }
-      case 'shophouse': {
-        const w = 40;
-        g.fillStyle = ['#e88a6a', '#6ab4a8', '#e8d87a'][Math.floor(rng() * 3)];
-        g.fillRect(x - w / 2, y - 34, w, 34);
-        g.fillStyle = '#8a5a2a';
-        g.beginPath(); g.moveTo(x - w / 2 - 5, y - 34); g.lineTo(x, y - 50); g.lineTo(x + w / 2 + 5, y - 34); g.fill();
-        g.fillStyle = '#4c3018'; g.fillRect(x - 6, y - 16, 12, 16);
-        g.fillStyle = '#2c1c0c';
-        g.fillRect(x - w / 2 + 5, y - 28, 8, 8); g.fillRect(x + w / 2 - 13, y - 28, 8, 8);
-        break;
-      }
       case 'trees':
         Sprites.draw(g, rng() < 0.6 ? 'tree' : 'bush', x, y, 3);
         break;
@@ -336,6 +457,9 @@ const Renderer = {
     ctx.clearRect(0, 0, 960, 600);
     ctx.imageSmoothingEnabled = false;
     if (this.bg) ctx.drawImage(this.bg, 0, 0);
+
+    // animated MRT trains on the viaducts
+    this.drawTrains(ctx);
 
     // rally point marker
     if (game.rallyPickTower) {
@@ -479,7 +603,6 @@ const Renderer = {
     if (fx.kind === 'boom') {
       const r = fx.r * (1 - a * 0.5);
       ctx.fillStyle = `rgba(255,${160 + 60 * a | 0},60,${a * 0.75})`;
-      // chunky pixel explosion
       const step = 8;
       for (let dx = -r; dx < r; dx += step)
         for (let dy = -r; dy < r; dy += step)
@@ -505,3 +628,24 @@ const Renderer = {
     }
   },
 };
+
+/* small geometry helpers used by the renderer */
+function distToLinePts(pts, x, y) {
+  let best = Infinity;
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, y1] = pts[i - 1], [x2, y2] = pts[i];
+    const dx = x2 - x1, dy = y2 - y1;
+    const len2 = dx * dx + dy * dy || 1;
+    const t = clamp(((x - x1) * dx + (y - y1) * dy) / len2, 0, 1);
+    best = Math.min(best, Math.hypot(x - (x1 + dx * t), y - (y1 + dy * t)));
+  }
+  return best;
+}
+function pointInPolyR(poly, x, y) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}

@@ -4,6 +4,7 @@
 const Game = {
   // static per-level
   levelIndex: 0, level: null, layout: null, paths: [], waves: [],
+  mode: 'campaign', allowedTowers: null,   // null = all towers
 
   // dynamic state
   running: false, over: false, won: false,
@@ -17,18 +18,22 @@ const Game = {
 
   /* ---------- setup ---------- */
 
-  start(levelIndex) {
+  start(levelIndex, mode = 'campaign') {
     const lv = LEVELS[levelIndex];
     this.levelIndex = levelIndex;
     this.level = lv;
+    this.mode = mode;
     this.layout = LAYOUTS[lv.layout];
     this.paths = this.layout.paths.map(p => buildPath(p));
-    this.waves = genWaves(levelIndex);
+    this.waves = genWaves(levelIndex, mode);
+    this.allowedTowers = mode === 'iron' ? ironTowers(levelIndex) : null;
 
     this.running = true; this.over = false; this.won = false;
     this.time = 0; this.speed = 1; this.paused = false;
-    this.gold = lv.gold + levelIndex * 12; // richer start on later levels
-    this.lives = lv.lives; this.maxLives = lv.lives;
+    // challenges: a little extra gold to compensate for one life / less bounty room
+    this.gold = lv.gold + levelIndex * 12 + (mode === 'iron' ? 220 : mode === 'heroic' ? 120 : 0);
+    this.lives = mode === 'campaign' ? lv.lives : 1;
+    this.maxLives = this.lives;
     this.waveIndex = -1; this.waveActive = false; this.autoWaveTimer = 0;
     this.spawnQueue = [];
     this.enemies = []; this.towers = []; this.soldiers = [];
@@ -99,9 +104,14 @@ const Game = {
     return this.towers.find(t => t.spot === i) || null;
   },
 
+  towerAllowed(type) {
+    return !this.allowedTowers || this.allowedTowers.includes(type);
+  },
+
   build(spotIdx, type) {
     const def = TOWER_TYPES[type];
     const cost = def.levels[0].cost;
+    if (!this.towerAllowed(type)) return false;
     if (this.gold < cost || this.towerAtSpot(spotIdx)) return false;
     this.gold -= cost;
     const [x, y] = this.layout.spots[spotIdx];
@@ -403,9 +413,14 @@ const Game = {
     if (this.over) return;
     this.over = true; this.won = won; this.running = false;
     if (won) {
-      const ratio = this.lives / this.maxLives;
-      this.stars = ratio >= 0.9 ? 3 : ratio >= 0.55 ? 2 : 1;
-      Progress.complete(this.levelIndex, this.stars);
+      if (this.mode === 'campaign') {
+        const ratio = this.lives / this.maxLives;
+        this.stars = ratio >= 0.9 ? 3 : ratio >= 0.55 ? 2 : 1;
+        Progress.complete(this.levelIndex, this.stars);
+      } else {
+        this.stars = 1; // challenge medal
+        Progress.completeChallenge(this.levelIndex, this.mode);
+      }
       Sound.win();
     } else {
       this.stars = 0;
@@ -418,23 +433,38 @@ const Game = {
 /* ---------- persistent progress ---------- */
 const Progress = {
   KEY: 'merlion-defense-v1',
-  data: { stars: {} },
+  data: { stars: {}, heroic: {}, iron: {} },
 
   load() {
-    try { this.data = JSON.parse(localStorage.getItem(this.KEY)) || { stars: {} }; }
-    catch (e) { this.data = { stars: {} }; }
-    if (!this.data.stars) this.data.stars = {};
+    try { this.data = JSON.parse(localStorage.getItem(this.KEY)) || {}; }
+    catch (e) { this.data = {}; }
+    this.data.stars = this.data.stars || {};
+    this.data.heroic = this.data.heroic || {};
+    this.data.iron = this.data.iron || {};
   },
   save() { localStorage.setItem(this.KEY, JSON.stringify(this.data)); },
-  reset() { this.data = { stars: {} }; this.save(); },
+  reset() { this.data = { stars: {}, heroic: {}, iron: {} }; this.save(); },
 
   starsFor(i) { return this.data.stars[i] || 0; },
-  totalStars() { return Object.values(this.data.stars).reduce((a, b) => a + b, 0); },
+  heroicDone(i) { return !!this.data.heroic[i]; },
+  ironDone(i) { return !!this.data.iron[i]; },
+  /* total = campaign stars + 1 per completed challenge (KR-style 5 per level) */
+  totalStars() {
+    return Object.values(this.data.stars).reduce((a, b) => a + b, 0) +
+      Object.keys(this.data.heroic).length + Object.keys(this.data.iron).length;
+  },
+  maxStars() { return LEVELS.length * 5; },
   unlocked(i) {
     if (i === 0) return true;
     return this.starsFor(i - 1) > 0;
   },
+  /* challenges unlock after a 3-star campaign clear (like Kingdom Rush) */
+  challengesUnlocked(i) { return this.starsFor(i) >= 3; },
   complete(i, stars) {
     if (stars > this.starsFor(i)) { this.data.stars[i] = stars; this.save(); }
+  },
+  completeChallenge(i, mode) {
+    this.data[mode === 'heroic' ? 'heroic' : 'iron'][i] = true;
+    this.save();
   },
 };
