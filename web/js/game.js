@@ -32,7 +32,7 @@ const Game = {
     this.time = 0; this.speed = 1; this.paused = false;
     this.meritsEarned = 0;
     // challenges: a little extra gold to compensate for one life / less bounty room
-    this.gold = lv.gold + levelIndex * 12 + (mode === 'iron' ? 220 : mode === 'heroic' ? 120 : 0);
+    this.gold = lv.gold + levelIndex * 12 + (mode === 'iron' ? 280 : mode === 'heroic' ? 260 : 0);
     this.lives = mode === 'campaign' ? lv.lives : 1;
     this.maxLives = this.lives;
     this.waveIndex = -1; this.waveActive = false; this.autoWaveTimer = 0;

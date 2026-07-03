@@ -1,7 +1,8 @@
 /* Headless balance simulation: node test/sim.js
-   Uses a reasonable-player AI: builds on pads closest to the road,
-   mixes tower types, upgrades when affordable. Every level should be
-   winnable by this AI (players are smarter than this).            */
+   Uses a competent-player AI: builds on pads closest to the road,
+   mixes tower types, upgrades when affordable, and micro-manages
+   heroes onto the most advanced threats (as real players do).
+   Every level should be winnable by this AI.                      */
 'use strict';
 const vm = require('vm');
 const fs = require('fs');
@@ -72,15 +73,20 @@ function simulate(li, mode = 'campaign') {
     Game.build(ranked[bi], mix[bi]); bi++;
   }
 
+  // upgrade priority: towers closest to the road first (they see the most traffic)
+  const padRank = new Map(ranked.map((spot, ord) => [spot, ord]));
+
   Game.callNextWave();
-  let steps = 0;
+  let steps = 0, microT = 0;
   while (!Game.over && steps < 3000000) {
     Game.update(1 / 60); steps++;
     if (bi < ranked.length && bi < mix.length) {
       const cost = TOWER_TYPES[mix[bi]].levels[0].cost;
       if (Game.gold >= cost) { Game.build(ranked[bi], mix[bi]); bi++; }
     } else {
-      for (const t of Game.towers) {
+      const order = Game.towers.slice()
+        .sort((a, b) => (padRank.get(a.spot) ?? 99) - (padRank.get(b.spot) ?? 99));
+      for (const t of order) {
         const def = TOWER_TYPES[t.type];
         if (t.level < def.levels.length - 1 && Game.gold >= def.levels[t.level + 1].cost + 80) {
           Game.upgrade(t); break;
@@ -90,6 +96,24 @@ function simulate(li, mode = 'campaign') {
           const ui = t.id % 2;
           if (Game.gold >= def.ults[ui].cost + 80) { Game.chooseUlt(t, ui); break; }
         }
+      }
+    }
+    // hero micro: every ~1.5s, send idle heroes to intercept the enemies
+    // furthest along their paths (real players do this constantly)
+    microT += 1 / 60;
+    if (microT >= 1.5) {
+      microT = 0;
+      const threats = Game.enemies
+        .filter(e => !e.dead && e.d > 0)
+        .sort((a, b) => b.d / b.path.total - a.d / a.path.total);
+      let ti = 0;
+      for (const h of Game.heroes) {
+        if (h.dead || (h.target && !h.target.dead)) continue;
+        const e = threats[ti++];
+        if (!e) break;
+        // stand slightly ahead of the enemy so melee heroes engage on arrival
+        const p = pointAt(e.path, Math.min(e.path.total - 40, e.d + 55));
+        Game.orderHero(h, p.x, p.y);
       }
     }
     if (!Game.waveActive && Game.canCallWave() && Game.enemies.length === 0 && Game.spawnQueue.length === 0)

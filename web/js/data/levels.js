@@ -43,10 +43,10 @@ const LEVELS = [
   { name: 'Hougang Ave 8',       diff: 'normal', layout: 6,  theme: 'town',   tod: 'day',     waves: 8,  gold: 270, lives: 18 },
   { name: 'Pasir Ris Park',      diff: 'normal', layout: 7,  theme: 'coast',  tod: 'morning', waves: 8,  gold: 270, lives: 18 },
   { name: 'Tampines Hub',        diff: 'normal', layout: 8,  theme: 'town',   tod: 'day',     waves: 9,  gold: 280, lives: 18 },
-  { name: 'Punggol Waterway',    diff: 'normal', layout: 9,  theme: 'river',  tod: 'evening', waves: 9,  gold: 620, lives: 18, boss: 'nagaBoss' },
+  { name: 'Punggol Waterway',    diff: 'normal', layout: 9,  theme: 'river',  tod: 'evening', waves: 9,  gold: 700, lives: 18, boss: 'nagaBoss' },
   { name: 'Changi Village',      diff: 'normal', layout: 10, theme: 'coast',  tod: 'morning', waves: 9,  gold: 280, lives: 16 },
-  { name: 'Bedok Interchange',   diff: 'normal', layout: 11, theme: 'town',   tod: 'day',     waves: 9,  gold: 340, lives: 16 },
-  { name: 'Geylang Serai',       diff: 'normal', layout: 12, theme: 'town',   tod: 'night',   waves: 10, gold: 290, lives: 16 },
+  { name: 'Bedok Interchange',   diff: 'normal', layout: 11, theme: 'town',   tod: 'day',     waves: 9,  gold: 500, lives: 16 },
+  { name: 'Geylang Serai',       diff: 'normal', layout: 12, theme: 'town',   tod: 'night',   waves: 10, gold: 460, lives: 16 },
   { name: 'Kampong Glam',        diff: 'normal', layout: 13, theme: 'town',   tod: 'evening', waves: 10, gold: 290, lives: 16 },
   { name: 'Little India',        diff: 'normal', layout: 14, theme: 'town',   tod: 'day',     waves: 10, gold: 290, lives: 16 },
 
@@ -56,15 +56,15 @@ const LEVELS = [
   { name: 'Bukit Batok Quarry',  diff: 'hard',   layout: 17, theme: 'forest', tod: 'evening', waves: 11, gold: 310, lives: 15 },
   { name: 'Jurong Lake Gardens', diff: 'hard',   layout: 18, theme: 'park',   tod: 'day',     waves: 11, gold: 310, lives: 15 },
   { name: 'Clementi Forest',     diff: 'hard',   layout: 19, theme: 'forest', tod: 'night',   waves: 12, gold: 560, lives: 15 },
-  { name: 'Haw Par Villa',       diff: 'hard',   layout: 20, theme: 'park',   tod: 'evening', waves: 12, gold: 330, lives: 12, boss: 'rangda' },
-  { name: 'Queenstown Commons',  diff: 'hard',   layout: 21, theme: 'town',   tod: 'day',     waves: 12, gold: 380, lives: 12 },
-  { name: 'Tiong Bahru Estate',  diff: 'hard',   layout: 22, theme: 'town',   tod: 'morning', waves: 12, gold: 330, lives: 12 },
+  { name: 'Haw Par Villa',       diff: 'hard',   layout: 20, theme: 'park',   tod: 'evening', waves: 12, gold: 880, lives: 12, boss: 'rangda' },
+  { name: 'Queenstown Commons',  diff: 'hard',   layout: 21, theme: 'town',   tod: 'day',     waves: 12, gold: 730, lives: 12 },
+  { name: 'Tiong Bahru Estate',  diff: 'hard',   layout: 22, theme: 'town',   tod: 'morning', waves: 12, gold: 430, lives: 12 },
   { name: 'Chinatown Pagoda St', diff: 'hard',   layout: 23, theme: 'town',   tod: 'night',   waves: 13, gold: 330, lives: 12 },
-  { name: 'Boat Quay',           diff: 'hard',   layout: 24, theme: 'river',  tod: 'evening', waves: 13, gold: 340, lives: 12 },
+  { name: 'Boat Quay',           diff: 'hard',   layout: 24, theme: 'river',  tod: 'evening', waves: 13, gold: 390, lives: 12 },
 
   // === ACT 4 · CITY & THE SOUTH (heroic) ===
   { name: 'Clarke Quay Night',   diff: 'heroic', layout: 25, theme: 'river',  tod: 'night',   waves: 13, gold: 440, lives: 12 },
-  { name: 'Orchard Road',        diff: 'heroic', layout: 26, theme: 'town',   tod: 'evening', waves: 14, gold: 350, lives: 10 },
+  { name: 'Orchard Road',        diff: 'heroic', layout: 26, theme: 'town',   tod: 'evening', waves: 14, gold: 710, lives: 10 },
   { name: 'Marina Barrage',      diff: 'heroic', layout: 27, theme: 'coast',  tod: 'day',     waves: 14, gold: 350, lives: 10 },
   { name: 'Sentosa Siloso',      diff: 'heroic', layout: 28, theme: 'coast',  tod: 'morning', waves: 15, gold: 360, lives: 10 },
   { name: 'Merlion Park',        diff: 'heroic', layout: 29, theme: 'coast',  tod: 'night',   waves: 15, gold: 400, lives: 10, boss: 'yamaOx' },
@@ -82,8 +82,11 @@ const ACTS = [
    the towers (every level fields 1 hero in acts 1-2, 2 heroes in 3-4),
    and up AGAIN for the 8-tower arsenal + capped pads (12/level).
    Whole ladder shifted one tier up (easy≈old normal … heroic beyond
-   the old top) after playtests found the game too easy.               */
-const DIFF_SCALE = { easy: 1.26, normal: 1.44, hard: 1.52, heroic: 1.64 };
+   the old top) after playtests found the game too easy — and then
+   AGAIN (easy≈old hard, normal above that, hard/heroic well beyond)
+   after the game was still reported too easy — validated against a
+   stronger sim AI that also micro-manages heroes like real players.  */
+const DIFF_SCALE = { easy: 1.60, normal: 1.74, hard: 1.95, heroic: 2.12 };
 
 /* ===== Game modes (Kingdom Rush style) =====
    campaign — the story mode; earn up to ★★★.
