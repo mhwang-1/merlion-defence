@@ -32,14 +32,15 @@ cd web && python3 -m http.server 8080
 ## Game overview
 
 ### 30 Levels
-Real Singapore neighbourhoods across 4 difficulty tiers:
+Real Singapore neighbourhoods, grouped geographically — each difficulty tier is
+an “act” covering one region of the island as the invasion sweeps south:
 
-| Tier | Levels | Examples |
-|---|---|---|
-| Easy | 1–6 | Ang Mo Kio Central, Changi Village, Tiong Bahru |
-| Normal | 7–15 | Kampong Glam, Boat Quay (Naga boss), Little India |
-| Hard | 16–25 | Haw Par Villa (Rangda boss), Marina Barrage |
-| Heroic | 26–30 | Orchard Road, Sentosa, Merlion Park (Ox-Head Warden boss) |
+| Act / Tier | Levels | Region | Examples |
+|---|---|---|---|
+| Act 1 · Easy | 1–6 | Northern heartlands | Ang Mo Kio, Yishun Dam, Woodlands Causeway |
+| Act 2 · Normal | 7–15 | The East | Punggol Waterway (Naga boss), Changi Village, Little India |
+| Act 3 · Hard | 16–25 | Central & West | MacRitchie, Haw Par Villa (Rangda boss), Boat Quay |
+| Act 4 · Heroic | 26–30 | City & the South | Orchard Road, Sentosa, Merlion Park (Ox-Head Warden boss) |
 
 Levels unlock sequentially; earn up to ★★★ per level based on lives kept.
 Progress is saved in your browser (localStorage).

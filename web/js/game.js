@@ -256,6 +256,7 @@ const Game = {
       e.d += e.def.speed * slowMul * dt;
       const p = pointAt(e.path, Math.max(0, e.d));
       e.x = p.x; e.y = p.y;
+      if (Math.abs(p.dx) > 0.1) e.vx = p.dx; // facing for sprite flip
 
       if (e.d >= e.path.total - 2) {
         e.dead = true; e.leaked = true;

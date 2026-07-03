@@ -10,6 +10,10 @@ const UI = {
     this.canvas = $('game-canvas');
     this.ctx = this.canvas.getContext('2d');
 
+    // pixel-art merlion on the main menu
+    const tm = document.querySelector('.title-merlion');
+    if (tm) tm.innerHTML = `<img src="${Sprites.url('merlion')}" alt="Merlion" class="pixel-merlion">`;
+
     // menu
     $('btn-play').onclick = () => { Sound.ensure(); this.show('levels'); this.renderLevels(); };
     $('btn-help').onclick = () => this.show('help');
@@ -69,6 +73,13 @@ const UI = {
     const grid = $('level-grid');
     grid.innerHTML = '';
     LEVELS.forEach((lv, i) => {
+      const act = ACTS.find(a => a.at === i);
+      if (act) {
+        const h = document.createElement('div');
+        h.className = 'act-header';
+        h.innerHTML = `<span class="act-name">${act.name}</span><span class="act-blurb">${act.blurb}</span>`;
+        grid.appendChild(h);
+      }
       const unlocked = Progress.unlocked(i);
       const stars = Progress.starsFor(i);
       const card = document.createElement('div');
@@ -158,7 +169,8 @@ const UI = {
       const btn = document.createElement('button');
       btn.className = 'p-btn' + (Game.gold < cost ? ' disabled' : '');
       btn.title = def.desc;
-      btn.innerHTML = `<span class="ico">${def.emoji}</span><span class="nm">${def.name}</span><span class="cost">🪙 ${cost}</span>`;
+      const sprite = { cell: 't_cell', durian: 't_durian', temple: 't_temple', camp: 't_camp' }[key];
+      btn.innerHTML = `<img class="ico" src="${Sprites.url(sprite)}" alt=""><span class="nm">${def.name}</span><span class="cost">${cost}g</span>`;
       btn.onclick = ev => {
         ev.stopPropagation();
         if (Game.build(spotIdx, key)) this.hidePopups();
