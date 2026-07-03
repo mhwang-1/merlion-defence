@@ -9,6 +9,15 @@ const THEMES = {
   river:  { grass: '#6aa03c', grass2: '#5c8f33', deco: 'shophouse' },
 };
 
+/* Time-of-day ambience — baked tint on the background + live overlay,
+   with warm street lamps along the enemy route at dusk / night. */
+const TIMES_OF_DAY = {
+  morning: { icon: '🌅', name: 'Morning', bake: 'rgba(255,196,120,.13)', live: 'rgba(255,170,90,.05)' },
+  day:     { icon: '☀️', name: 'Day',     bake: null,                    live: null },
+  evening: { icon: '🌇', name: 'Evening', bake: 'rgba(255,116,56,.17)',  live: 'rgba(110,50,130,.10)', lamps: 'rgba(255,200,110,.28)' },
+  night:   { icon: '🌙', name: 'Night',   bake: 'rgba(18,28,78,.34)',    live: 'rgba(10,18,56,.16)',   lamps: 'rgba(255,200,110,.38)' },
+};
+
 /* road stroke widths by OSM class (0 motorway/trunk … 4 service) */
 const ROAD_W     = [30, 26, 20, 14, 7];
 const ROAD_EDGE  = '#63686f';
@@ -17,6 +26,7 @@ const MINOR_FILL = '#9aa0a8';
 
 const Renderer = {
   bg: null,          // cached background canvas
+  tod: null,         // active time-of-day config
   railPaths: [],     // built rail polylines for the train animation
   trains: [],        // animated trains { path, d, speed, dir }
 
@@ -33,11 +43,16 @@ const Renderer = {
     // ---- grass base + chunky pixel patches ----
     g.fillStyle = theme.grass;
     g.fillRect(0, 0, 960, 600);
-    for (let i = 0; i < 260; i++) {
-      g.fillStyle = rng() < 0.6 ? theme.grass2 : 'rgba(255,255,255,0.06)';
-      const x = Math.floor(rng() * 120) * 8, y = Math.floor(rng() * 75) * 8;
-      const w = (1 + Math.floor(rng() * 3)) * 8;
-      g.fillRect(x, y, w, 8);
+    // fine two-layer dither: broad tone patches + small speckle
+    for (let i = 0; i < 420; i++) {
+      g.fillStyle = rng() < 0.6 ? theme.grass2 : 'rgba(255,255,255,0.05)';
+      const x = Math.floor(rng() * 240) * 4, y = Math.floor(rng() * 150) * 4;
+      const w = (2 + Math.floor(rng() * 4)) * 4;
+      g.fillRect(x, y, w, 4);
+    }
+    for (let i = 0; i < 700; i++) {
+      g.fillStyle = rng() < 0.5 ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.05)';
+      g.fillRect(Math.floor(rng() * 480) * 2, Math.floor(rng() * 300) * 2, 2, 2);
     }
 
     // ---- real parks / forests (slightly darker green) ----
@@ -89,7 +104,16 @@ const Renderer = {
     // ---- the ENEMY ROUTE: highlighted so it reads as "the path" ----
     for (const path of paths) {
       this.strokePath(g, path.points, 40, '#6d5a38');
-      this.strokePath(g, path.points, 32, '#b09878');
+      this.strokePath(g, path.points, 34, '#9d8663');
+      this.strokePath(g, path.points, 30, '#b09878');
+      // fine dirt texture: pebbles + ruts along the trail
+      const bp = buildPath(path.points);
+      for (let d = 6; d < bp.total; d += 7) {
+        const p = pointAt(bp, d);
+        const off = (rng() - 0.5) * 22;
+        g.fillStyle = rng() < 0.5 ? 'rgba(255,244,214,.20)' : 'rgba(60,44,20,.18)';
+        g.fillRect(Math.round(p.x - p.dy * off) - 1, Math.round(p.y + p.dx * off) - 1, 2 + (rng() < 0.3 ? 1 : 0), 2);
+      }
       g.save();
       g.setLineDash([12, 10]);
       this.strokePath(g, path.points, 3, 'rgba(255,244,200,.75)');
@@ -143,31 +167,52 @@ const Renderer = {
       }
     }
 
-    // ---- entrance / exit markers ----
+    // ---- entrance / defended objective markers ----
     for (const path of paths) {
       const p0 = path.points[0], pn = path.points[path.points.length - 1];
       this.portal(g, p0[0], p0[1]);
-      this.mrtExit(g, pn[0], pn[1]);
+      this.opsCommand(g, pn[0], pn[1]);
     }
 
     // ---- build pads (high contrast so they read against real buildings) ----
     for (const [x, y] of layout.spots) {
-      g.fillStyle = 'rgba(0,0,0,.3)';
-      g.fillRect(x - 22, y - 12, 46, 30);
-      g.fillStyle = '#8a6d3a';
+      // soft ground shadow
+      g.fillStyle = 'rgba(0,0,0,.28)';
+      g.beginPath(); g.ellipse(x + 2, y + 14, 24, 7, 0, 0, 7); g.fill();
+      // bevelled concrete slab
+      g.fillStyle = '#6d5527';                       // dark under-edge
+      g.fillRect(x - 23, y - 16, 46, 32);
+      g.fillStyle = '#a8894c';                       // side face
       g.fillRect(x - 23, y - 17, 46, 30);
-      g.fillStyle = '#d8b96a';
-      g.fillRect(x - 20, y - 14, 40, 24);
-      // hazard corners
-      g.fillStyle = '#403014';
-      g.fillRect(x - 20, y - 14, 8, 4); g.fillRect(x - 20, y - 14, 4, 8);
-      g.fillRect(x + 12, y - 14, 8, 4); g.fillRect(x + 16, y - 14, 4, 8);
-      g.fillRect(x - 20, y + 6, 8, 4);  g.fillRect(x - 20, y + 2, 4, 8);
-      g.fillRect(x + 12, y + 6, 8, 4);  g.fillRect(x + 16, y + 2, 4, 8);
-      // hammer glyph
-      g.fillStyle = '#7a5c22';
-      g.fillRect(x - 6, y - 6, 12, 4);
-      g.fillRect(x - 2, y - 2, 4, 9);
+      g.fillStyle = '#e0c37c';                       // top-lit rim
+      g.fillRect(x - 21, y - 15, 42, 2);
+      g.fillStyle = '#d2b264';                       // slab top
+      g.fillRect(x - 21, y - 13, 42, 24);
+      // fine concrete texture flecks
+      g.fillStyle = 'rgba(255,255,255,.14)';
+      g.fillRect(x - 16, y - 9, 3, 2); g.fillRect(x + 6, y - 5, 4, 2);
+      g.fillRect(x - 6, y + 5, 3, 2);  g.fillRect(x + 12, y + 3, 3, 2);
+      g.fillStyle = 'rgba(0,0,0,.10)';
+      g.fillRect(x - 10, y - 3, 4, 2); g.fillRect(x + 2, y + 7, 4, 2);
+      g.fillRect(x + 14, y - 9, 3, 2);
+      // hazard-stripe corner chevrons (fine 3px steps)
+      g.fillStyle = '#4a3a16';
+      for (const [cx, cy, dx, dy] of [[-21, -13, 1, 1], [21, -13, -1, 1], [-21, 11, 1, -1], [21, 11, -1, -1]]) {
+        g.fillRect(x + cx + (dx < 0 ? -9 : 0), y + cy + (dy < 0 ? -3 : 0), 9, 3);
+        g.fillRect(x + cx + (dx < 0 ? -3 : 0), y + cy + (dy < 0 ? -9 : 0), 3, 9);
+      }
+      g.fillStyle = '#e8b13a';
+      for (const [cx, cy, dx, dy] of [[-21, -13, 1, 1], [21, -13, -1, 1], [-21, 11, 1, -1], [21, 11, -1, -1]]) {
+        g.fillRect(x + cx + dx * 3 + (dx < 0 ? -3 : 0), y + cy + (dy < 0 ? -3 : 0), 3, 3);
+        g.fillRect(x + cx + (dx < 0 ? -3 : 0), y + cy + dy * 3 + (dy < 0 ? -3 : 0), 3, 3);
+      }
+      // crane / build glyph (finer)
+      g.fillStyle = '#8a6a28';
+      g.fillRect(x - 7, y - 6, 14, 3);
+      g.fillRect(x - 2, y - 3, 3, 9);
+      g.fillRect(x - 4, y + 6, 8, 2);
+      g.fillStyle = 'rgba(255,255,255,.25)';
+      g.fillRect(x - 7, y - 6, 14, 1);
     }
 
     // ---- landmarks (real-place anchors) ----
@@ -184,6 +229,27 @@ const Renderer = {
       if (!this.openGround(geo, layout, paths, x, y)) continue;
       this.deco(g, theme.deco, x, y, rng);
       placed++;
+    }
+
+    // ---- time-of-day ambience (baked over the whole map) ----
+    this.tod = TIMES_OF_DAY[level.tod || 'day'];
+    if (this.tod.lamps) {
+      // warm street lamps along the enemy route
+      for (const path of paths) {
+        const bp = buildPath(path.points);
+        for (let d = 70; d < bp.total - 50; d += 150) {
+          const p = pointAt(bp, d);
+          const grd = g.createRadialGradient(p.x, p.y, 3, p.x, p.y, 52);
+          grd.addColorStop(0, this.tod.lamps);
+          grd.addColorStop(1, 'rgba(255,190,90,0)');
+          g.fillStyle = grd;
+          g.beginPath(); g.arc(p.x, p.y, 52, 0, 7); g.fill();
+        }
+      }
+    }
+    if (this.tod.bake) {
+      g.fillStyle = this.tod.bake;
+      g.fillRect(0, 0, 960, 600);
     }
 
     this.bg = c;
@@ -287,20 +353,26 @@ const Renderer = {
     Sprites.draw(g, 'portal', x, y, 3);
   },
 
-  mrtExit(g, x, y) {
-    x = clamp(x, 30, 930); y = clamp(y, 26, 574);
-    g.fillStyle = '#8e1f1f';
-    g.fillRect(x - 28, y - 24, 56, 44);
-    g.fillStyle = '#d32f2f';
-    g.fillRect(x - 26, y - 22, 52, 40);
-    g.fillStyle = '#fff';
-    g.fillRect(x - 22, y - 18, 44, 20);
-    g.fillStyle = '#d32f2f';
-    g.font = 'bold 13px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText('MRT', x, y - 8);
-    g.fillStyle = '#fff';
-    g.font = 'bold 11px monospace';
-    g.fillText('EXIT', x, y + 10);
+  /* Temporary Operations Command — the field HQ the player defends.
+     (A deployable tent post reads plausibly anywhere, unlike an MRT
+     station appearing in a park or on a dam.)                        */
+  opsCommand(g, x, y) {
+    x = clamp(x, 44, 916); y = clamp(y, 34, 566);
+    // soft ground shadow
+    g.fillStyle = 'rgba(0,0,0,.25)';
+    g.beginPath(); g.ellipse(x + 3, y + 26, 44, 10, 0, 0, 7); g.fill();
+    // field HQ tent (pixel sprite: canvas roof, radio mast, sandbag ring)
+    Sprites.draw(g, 'command_post', x, y, 4);
+    // beacon on the radio mast
+    g.fillStyle = '#ff5252';
+    g.fillRect(x - 37, y - 32, 4, 4);
+    // OPS COMMAND sign over the doorway
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#20180c';
+    g.fillRect(x - 17, y - 4, 34, 10);
+    g.fillStyle = '#ffd23c';
+    g.font = 'bold 8px monospace';
+    g.fillText('OPS HQ', x, y + 1);
   },
 
   /* ---------- landmark drawing ---------- */
@@ -479,8 +551,29 @@ const Renderer = {
       ctx.beginPath(); ctx.arc(t.x, t.y, r, 0, 7); ctx.fill(); ctx.stroke();
     }
 
+    // hero hold-point flags + selection ring
+    for (const h of game.heroes) {
+      if (game.selected && game.selected.kind === 'hero' && game.selected.hero === h) {
+        ctx.strokeStyle = 'rgba(255,235,59,.9)'; ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath(); ctx.arc(h.x, h.y, 20, 0, 7); ctx.stroke();
+        if (h.def.range) { ctx.beginPath(); ctx.arc(h.x, h.y, h.def.range, 0, 7); ctx.stroke(); }
+        ctx.setLineDash([]);
+        if (dist(h.x, h.y, h.hx, h.hy) > 8) {
+          ctx.fillStyle = 'rgba(165,214,167,.9)';
+          ctx.fillRect(h.hx - 2, h.hy - 12, 3, 12);
+          ctx.beginPath();
+          ctx.moveTo(h.hx + 1, h.hy - 12); ctx.lineTo(h.hx + 11, h.hy - 9); ctx.lineTo(h.hx + 1, h.hy - 6);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+    }
+
     // soldiers
     for (const s of game.soldiers) this.soldier(ctx, s);
+
+    // heroes
+    for (const h of game.heroes) this.hero(ctx, h, game.time);
 
     // enemies (ground first, flying on top)
     const sorted = [...game.enemies].sort((a, b) => (a.def.flying ? 1 : 0) - (b.def.flying ? 1 : 0));
@@ -491,6 +584,13 @@ const Renderer = {
 
     // projectiles
     for (const p of game.projectiles) this.projectile(ctx, p);
+
+    // time-of-day live overlay (units blend into the scene lighting;
+    // floating text / effects stay crisp above it)
+    if (this.tod && this.tod.live) {
+      ctx.fillStyle = this.tod.live;
+      ctx.fillRect(0, 0, 960, 600);
+    }
 
     // particles / floating text
     for (const fx of game.effects) this.effect(ctx, fx);
@@ -511,6 +611,7 @@ const Renderer = {
     const spr = Sprites.get(e.type) ? e.type : 'toyol';
     Sprites.draw(ctx, spr, e.x, y, scale, flip);
     if (e.slowT > 0) Sprites.drawTinted(ctx, spr, 'rgba(110,190,255,.45)', e.x, y, scale, flip);
+    if (e.burnT > 0) Sprites.drawTinted(ctx, spr, 'rgba(255,120,40,.40)', e.x, y, scale, flip);
 
     // boss aura
     if (e.def.boss) {
@@ -534,7 +635,7 @@ const Renderer = {
   tower(ctx, t, time) {
     const lv = t.level;
     const scale = 2.6 + lv * 0.5;
-    const sprite = { cell: 't_cell', durian: 't_durian', temple: 't_temple', camp: 't_camp' }[t.type];
+    const sprite = TOWER_SPRITE[t.type];
 
     // shadow under sprite
     ctx.fillStyle = 'rgba(0,0,0,.25)';
@@ -546,6 +647,24 @@ const Renderer = {
     if (t.type === 'cell' && t.cool < 0.1 && t.cool > 0) {
       ctx.fillStyle = 'rgba(160,220,255,.9)';
       ctx.fillRect(t.x - 3, t.y - 8 - 7 * scale, 6, 6);
+    }
+    // crackling coil sparks
+    if (t.type === 'power' && t.cool < 0.15 && t.cool > 0) {
+      ctx.fillStyle = 'rgba(126,232,255,.9)';
+      ctx.fillRect(t.x - 6, t.y - 8 - 6 * scale, 4, 4);
+      ctx.fillRect(t.x + 3, t.y - 4 - 6 * scale, 4, 4);
+    }
+    // wok flames flicker
+    if (t.type === 'wok') {
+      const fl = 0.5 + 0.5 * Math.sin(time * 9 + t.x);
+      ctx.fillStyle = `rgba(255,140,40,${0.35 + fl * 0.3})`;
+      ctx.fillRect(t.x - 2, t.y - 10 - 6 * scale - fl * 3, 5, 5);
+    }
+    // frosty shimmer on the ice cart
+    if (t.type === 'ice') {
+      const gl = 0.18 + 0.12 * Math.sin(time * 2.5 + t.y);
+      ctx.fillStyle = `rgba(150,220,255,${gl})`;
+      ctx.beginPath(); ctx.arc(t.x, t.y - 8 - 4 * scale, 9, 0, 7); ctx.fill();
     }
     // temple glow
     if (t.type === 'temple') {
@@ -560,6 +679,39 @@ const Renderer = {
     for (let i = 0; i <= lv; i++) {
       ctx.fillRect(t.x - 10 + i * 8, t.y + 16, 5, 5);
       ctx.strokeRect(t.x - 10 + i * 8, t.y + 16, 5, 5);
+    }
+  },
+
+  hero(ctx, h, time) {
+    if (h.dead) {
+      // respawn hourglass at the hold point
+      ctx.globalAlpha = 0.75;
+      ctx.fillStyle = '#111';
+      ctx.beginPath(); ctx.arc(h.hx, h.hy, 13, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#ffd54f'; ctx.lineWidth = 3;
+      const frac = 1 - h.respawnT / HERO_RESPAWN;
+      ctx.beginPath(); ctx.arc(h.hx, h.hy, 13, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffd54f';
+      ctx.fillText(Math.ceil(h.respawnT), h.hx, h.hy);
+      return;
+    }
+    const bob = Math.sin(time * 5 + h.id) * 1.5;
+    ctx.fillStyle = 'rgba(0,0,0,.3)';
+    ctx.beginPath(); ctx.ellipse(h.x, h.y + 11, 11, 4.5, 0, 0, 7); ctx.fill();
+    Sprites.draw(ctx, h.def.sprite, h.x, h.y - 4 + bob, 2.4);
+    // gold hero chevron
+    ctx.fillStyle = '#ffd54f';
+    ctx.beginPath();
+    ctx.moveTo(h.x - 5, h.y - 26 + bob); ctx.lineTo(h.x + 5, h.y - 26 + bob); ctx.lineTo(h.x, h.y - 20 + bob);
+    ctx.closePath(); ctx.fill();
+    // hp bar
+    if (h.hp < h.maxHp) {
+      ctx.fillStyle = '#111'; ctx.fillRect(h.x - 14, h.y - 19, 28, 6);
+      ctx.fillStyle = '#37474f'; ctx.fillRect(h.x - 13, h.y - 18, 26, 4);
+      ctx.fillStyle = '#ffd54f'; ctx.fillRect(h.x - 13, h.y - 18, 26 * (h.hp / h.maxHp), 4);
     }
   },
 
@@ -585,6 +737,37 @@ const Renderer = {
         break;
       case 'durian':
         Sprites.draw(ctx, 'p_durian', p.x, p.y - p.arc, 2);
+        break;
+      case 'snipe': {
+        // long tracer round
+        const dx = p.x - p.sx, dy = p.y - p.sy, dl = Math.hypot(dx, dy) || 1;
+        ctx.strokeStyle = 'rgba(255,240,180,.9)'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(p.x - dx / dl * 22, p.y - dy / dl * 22);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        ctx.fillStyle = '#fffde7';
+        ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+        break;
+      }
+      case 'wokfire':
+        ctx.fillStyle = 'rgba(255,120,30,.9)';
+        ctx.beginPath(); ctx.arc(p.x, p.y - p.arc, 6, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(255,220,90,.95)';
+        ctx.fillRect(p.x - 2, p.y - p.arc - 2, 4, 4);
+        break;
+      case 'chain':
+        ctx.strokeStyle = 'rgba(126,232,255,.95)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(p.sx, p.sy); ctx.lineTo(p.x, p.y); ctx.stroke();
+        ctx.fillStyle = '#e0f7ff';
+        ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+        break;
+      case 'hero':
+        ctx.strokeStyle = p.magic ? 'rgba(206,147,216,.9)' : 'rgba(255,224,130,.9)';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(p.x - 4, p.y); ctx.lineTo(p.x + 4, p.y); ctx.stroke();
+        ctx.fillStyle = p.magic ? '#e1bee7' : '#ffecb3';
+        ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
         break;
       case 'talisman':
         ctx.save();
@@ -616,6 +799,21 @@ const Renderer = {
       ctx.strokeText(fx.text, fx.x, fx.y - fx.t * 26);
       ctx.fillText(fx.text, fx.x, fx.y - fx.t * 26);
       ctx.globalAlpha = 1;
+    } else if (fx.kind === 'freeze') {
+      // expanding frost ring (ice kacang pulse)
+      const r = fx.r * (0.35 + 0.65 * (fx.t / fx.dur));
+      ctx.strokeStyle = `rgba(150,220,255,${a * 0.8})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(fx.x, fx.y, r, 0, 7); ctx.stroke();
+      ctx.strokeStyle = `rgba(240,252,255,${a * 0.5})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(fx.x, fx.y, r * 0.8, 0, 7); ctx.stroke();
+    } else if (fx.kind === 'arc') {
+      // chain-lightning jump between two enemies
+      ctx.strokeStyle = `rgba(126,232,255,${a * 0.9})`;
+      ctx.lineWidth = 2.5;
+      const mx = (fx.x + fx.x2) / 2 + (fx.j || 0), my = (fx.y + fx.y2) / 2 - Math.abs(fx.j || 6);
+      ctx.beginPath(); ctx.moveTo(fx.x, fx.y); ctx.lineTo(mx, my); ctx.lineTo(fx.x2, fx.y2); ctx.stroke();
     } else if (fx.kind === 'poof') {
       ctx.globalAlpha = a * 0.85;
       ctx.fillStyle = '#e8e4da';

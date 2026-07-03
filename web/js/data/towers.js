@@ -46,6 +46,52 @@ const TOWER_TYPES = {
       { cost: 180, damage: 28, range: 115, fireRate: 1, label: 'Commandos', soldierHp: 340, respawn: 6 },
     ],
   },
+  mata: {
+    name: 'Mata Sniper Post', emoji: '🎯',
+    desc: 'Police marksman. Long-range shots that ignore armour.',
+    damageType: 'physical', targets: 'both', pierce: true,
+    levels: [
+      { cost: 120, damage: 48,  range: 195, fireRate: 0.42, label: 'Neighbourhood Post' },
+      { cost: 170, damage: 90,  range: 215, fireRate: 0.46, label: 'Marksman Nest' },
+      { cost: 260, damage: 160, range: 240, fireRate: 0.50, label: 'STAR Overwatch' },
+    ],
+  },
+  wok: {
+    name: 'Hawker Wok', emoji: '🔥',
+    desc: 'Flaming wok hei! Splash damage that keeps burning. Ground only.',
+    damageType: 'physical', targets: 'ground', splash: 46, burnDur: 3,
+    levels: [
+      { cost: 100, damage: 20, range: 105, fireRate: 1.0,  burnDps: 9,  label: 'Zi Char Stall' },
+      { cost: 150, damage: 34, range: 115, fireRate: 1.05, burnDps: 16, label: 'Wok Hei Master' },
+      { cost: 230, damage: 56, range: 125, fireRate: 1.1,  burnDps: 27, label: 'Michelin Hawker' },
+    ],
+  },
+  power: {
+    name: 'Substation Coil', emoji: '⚡',
+    desc: 'Grid lightning arcs between spirits. Magic chain damage.',
+    damageType: 'magic', targets: 'both',
+    levels: [
+      { cost: 130, damage: 30, range: 130, fireRate: 0.80, chain: 2, label: 'PUB Substation' },
+      { cost: 190, damage: 52, range: 140, fireRate: 0.85, chain: 3, label: 'Grid Coil' },
+      { cost: 280, damage: 88, range: 155, fireRate: 0.90, chain: 4, label: 'Tesla Array' },
+    ],
+  },
+  ice: {
+    name: 'Ice Kacang Cart', emoji: '🍧',
+    desc: 'Freezing pulse chills EVERY spirit in range. Hits air & ground.',
+    damageType: 'magic', targets: 'both', slow: { dur: 1.6 },
+    levels: [
+      { cost: 110, damage: 10, range: 105, fireRate: 0.55, slowFactor: 0.50, label: 'Ais Kacang Cart' },
+      { cost: 160, damage: 18, range: 115, fireRate: 0.60, slowFactor: 0.45, label: 'Snow Ice Stand' },
+      { cost: 240, damage: 30, range: 125, fireRate: 0.65, slowFactor: 0.40, label: 'Blizzard Bing' },
+    ],
+  },
+};
+
+/* canvas sprite name per tower type (render + DOM menus) */
+const TOWER_SPRITE = {
+  cell: 't_cell', durian: 't_durian', temple: 't_temple', camp: 't_camp',
+  mata: 't_mata', wok: 't_wok', power: 't_power', ice: 't_ice',
 };
 
 function towerTotalValue(type, level) {

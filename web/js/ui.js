@@ -16,12 +16,20 @@ const UI = {
 
     // menu
     $('btn-play').onclick = () => { Sound.ensure(); this.show('levels'); this.renderLevels(); };
+    $('btn-armory').onclick = () => { Sound.ensure(); this.show('armory'); this.renderArmory(); };
     $('btn-help').onclick = () => this.show('help');
     $('btn-help-back').onclick = () => this.show('menu');
     $('btn-reset').onclick = () => {
       if (confirm('Reset all level progress?')) { Progress.reset(); }
     };
     $('btn-levels-back').onclick = () => this.show('menu');
+    $('btn-armory-back').onclick = () => this.show('menu');
+    $('btn-levels-armory').onclick = () => { this.show('armory'); this.renderArmory(); };
+
+    // save export / import
+    $('btn-export').onclick = () => this.exportSave();
+    $('btn-import').onclick = () => $('import-file').click();
+    $('import-file').onchange = e => this.importSave(e.target.files[0]);
 
     // hud
     $('btn-next-wave').onclick = () => Game.callNextWave();
@@ -66,10 +74,100 @@ const UI = {
     $('screen-' + name).classList.add('active');
   },
 
+  /* ---------- save export / import ---------- */
+
+  exportSave() {
+    const blob = new Blob([Progress.exportJSON()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `merlion-defense-save-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  },
+
+  importSave(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        Progress.importJSON(reader.result);
+        alert(`Save loaded! ★ ${Progress.totalStars()} stars · 🎖 ${Progress.merits()} merits restored.`);
+        if ($('screen-levels').classList.contains('active')) this.renderLevels();
+        if ($('screen-armory').classList.contains('active')) this.renderArmory();
+      } catch (e) {
+        alert('Could not load save file: ' + e.message);
+      }
+      $('import-file').value = '';
+    };
+    reader.readAsText(file);
+  },
+
+  /* ---------- armory (spend merits on towers & heroes) ---------- */
+
+  renderArmory() {
+    $('armory-merits').textContent = `🎖 ${Progress.merits()} merits`;
+    const grid = $('armory-grid');
+    grid.innerHTML = '';
+
+    const head = t => {
+      const h = document.createElement('div');
+      h.className = 'act-header';
+      h.innerHTML = `<span class="act-name">${t}</span>`;
+      grid.appendChild(h);
+    };
+
+    head('🗼 TOWERS');
+    for (const key of Object.keys(TOWER_TYPES)) {
+      const def = TOWER_TYPES[key];
+      const cost = TOWER_MERIT_COST[key];
+      const owned = Progress.towerUnlocked(key);
+      const card = document.createElement('div');
+      card.className = 'armory-card' + (owned ? ' owned' : Progress.merits() >= cost ? ' buyable' : ' locked');
+      const sprite = TOWER_SPRITE[key];
+      card.innerHTML = `
+        <img class="ac-ico" src="${Sprites.url(sprite)}" alt="">
+        <div class="ac-body">
+          <div class="ac-name">${def.emoji} ${def.name}</div>
+          <div class="ac-desc">${def.desc}</div>
+        </div>
+        <div class="ac-cost">${owned ? '✓ OWNED' : `🎖 ${cost}`}</div>`;
+      if (!owned) card.onclick = () => {
+        if (Progress.unlockTower(key)) { Sound.build(); this.renderArmory(); }
+      };
+      grid.appendChild(card);
+    }
+
+    head(`🦸 HEROES — equip ${'◆'} (1 hero in Acts 1–2, 2 in Acts 3–4)`);
+    for (const key of HERO_ORDER) {
+      const def = HERO_TYPES[key];
+      const owned = Progress.heroUnlocked(key);
+      const equipped = Progress.data.loadout.includes(key);
+      const card = document.createElement('div');
+      card.className = 'armory-card' +
+        (owned ? (equipped ? ' owned equipped' : ' owned') :
+          Progress.merits() >= def.cost ? ' buyable' : ' locked');
+      const kindTag = def.kind === 'melee' ? '⚔ melee' : '🏹 ranged';
+      card.innerHTML = `
+        <img class="ac-ico" src="${Sprites.url(def.sprite)}" alt="">
+        <div class="ac-body">
+          <div class="ac-name">${def.emoji} ${def.name} <span class="ac-kind">${kindTag}</span></div>
+          <div class="ac-desc">${def.blurb}</div>
+          <div class="ac-stats">❤ ${def.hp} · ⚔ ${def.damage}${def.range ? ' · ◎ ' + def.range : ''}</div>
+        </div>
+        <div class="ac-cost">${owned ? (equipped ? '◆ EQUIPPED' : 'tap to equip') : def.cost === 0 ? 'FREE' : `🎖 ${def.cost}`}</div>`;
+      card.onclick = () => {
+        if (owned) { Progress.toggleLoadout(key); Sound.coin(); }
+        else if (Progress.unlockHero(key)) Sound.build();
+        this.renderArmory();
+      };
+      grid.appendChild(card);
+    }
+  },
+
   /* ---------- level select ---------- */
 
   renderLevels() {
-    $('total-stars').textContent = `★ ${Progress.totalStars()} / ${Progress.maxStars()}`;
+    $('total-stars').textContent = `★ ${Progress.totalStars()} / ${Progress.maxStars()} · 🎖 ${Progress.merits()}`;
     const grid = $('level-grid');
     grid.innerHTML = '';
     LEVELS.forEach((lv, i) => {
@@ -93,7 +191,7 @@ const UI = {
         <div class="lv-num">LEVEL ${i + 1}</div>
         <div class="lv-name">${unlocked ? lv.name : '🔒 ' + lv.name}</div>
         <div class="lv-stars">${'★'.repeat(stars)}<span style="color:#45586a">${'★'.repeat(3 - stars)}</span>${badges}</div>
-        <div class="lv-diff diff-${lv.diff}">${lv.diff.toUpperCase()}</div>`;
+        <div class="lv-diff diff-${lv.diff}">${lv.diff.toUpperCase()} <span title="${TIMES_OF_DAY[lv.tod || 'day'].name}">${TIMES_OF_DAY[lv.tod || 'day'].icon}</span></div>`;
       if (unlocked) card.onclick = () => chal ? this.showModePicker(i) : this.startLevel(i, 'campaign');
       grid.appendChild(card);
     });
@@ -176,6 +274,15 @@ const UI = {
       return;
     }
 
+    // tap a hero to take command
+    const h = Game.heroAt(x, y);
+    if (h) {
+      Game.selected = { kind: 'hero', hero: h };
+      this.hidePopups();
+      Sound.coin();
+      return;
+    }
+
     const spot = Game.spotAt(x, y);
     if (spot >= 0) {
       const t = Game.towerAtSpot(spot);
@@ -183,6 +290,13 @@ const UI = {
       else { Game.selected = { kind: 'spot', spot }; this.showBuildMenu(spot); }
       return;
     }
+
+    // hero selected → tap ground to move them there
+    if (Game.selected && Game.selected.kind === 'hero') {
+      Game.orderHero(Game.selected.hero, x, y);
+      return;
+    }
+
     Game.selected = null;
     this.hidePopups();
   },
@@ -218,8 +332,7 @@ const UI = {
       const btn = document.createElement('button');
       btn.className = 'p-btn' + (Game.gold < cost ? ' disabled' : '');
       btn.title = def.desc;
-      const sprite = { cell: 't_cell', durian: 't_durian', temple: 't_temple', camp: 't_camp' }[key];
-      btn.innerHTML = `<img class="ico" src="${Sprites.url(sprite)}" alt=""><span class="nm">${def.name}</span><span class="cost">${cost}g</span>`;
+      btn.innerHTML = `<img class="ico" src="${Sprites.url(TOWER_SPRITE[key])}" alt=""><span class="nm">${def.name}</span><span class="cost">${cost}g</span>`;
       btn.onclick = ev => {
         ev.stopPropagation();
         if (Game.build(spotIdx, key)) this.hidePopups();
@@ -305,10 +418,12 @@ const UI = {
     let msg;
     if (won && mode === 'campaign') {
       msg = `${lv.name} is safe! ${Game.lives}/${Game.maxLives} lives kept.`;
+      if (Game.meritsEarned) msg += ` +${Game.meritsEarned} 🎖 merits!`;
       if (stars >= 3 && !Progress.heroicDone(Game.levelIndex) && !Progress.ironDone(Game.levelIndex))
         msg += ' Heroic & Iron Challenges unlocked!';
     } else if (won) {
       msg = `${MODES[mode].name} conquered — bonus star earned!`;
+      if (Game.meritsEarned) msg += ` +${Game.meritsEarned} 🎖 merits!`;
     } else {
       msg = mode === 'campaign'
         ? `The hantus overran ${lv.name}. Try a new strategy, can one!`

@@ -26,7 +26,8 @@ requestAnimationFrame(frame);
 window.addEventListener('pointerdown', () => Sound.ensure(), { once: true });
 
 // dev helpers: ?autostart=LEVEL,MODE jumps into a level;
-// ?dev3stars=N grants ★★★ up to level N; ?showmodes=N opens the mode picker
+// ?dev3stars=N grants ★★★ up to level N; ?showmodes=N opens the mode picker;
+// ?showarmory=1&merits=200 opens the Armory (optionally with merits to spend)
 const _qs = new URLSearchParams(location.search);
 if (_qs.get('dev3stars') !== null) {
   const upTo = parseInt(_qs.get('dev3stars')) || 0;
@@ -41,4 +42,8 @@ if (_auto) {
   Sound.muted = true;
   UI.show('levels'); UI.renderLevels();
   UI.showModePicker(parseInt(_qs.get('showmodes')) || 0);
+} else if (_qs.get('showarmory') !== null) {
+  Sound.muted = true;
+  if (_qs.get('merits')) { Progress.data.merits = parseInt(_qs.get('merits')) || 0; }
+  UI.show('armory'); UI.renderArmory();
 }

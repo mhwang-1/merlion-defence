@@ -62,6 +62,36 @@ Each level has three modes. **Campaign** is the story mode. Beat it with a
 - **🛡 Iron Challenge** — one long unbroken siege. **One life**, and only a
   fixed subset of towers may be built (shown before you start).
 
+### 🦸 Heroes (local legends)
+Every battle fields a controllable hero — **tap the hero, then tap the
+ground** to move them. Acts 1–2 field one hero, Acts 3–4 field two. Fallen
+heroes respawn after a short wait. The roster of 10 draws on Singapore &
+SE Asian legend:
+
+| Hero | Style | Signature |
+|---|---|---|
+| 🦁 Sang Nila Utama | melee | lion-roar stun |
+| 🦌 Sang Kancil | melee | 45% evasion, very fast |
+| 💪 Badang | melee | ground-slam splash |
+| 👷 Samsui Sister | ranged | splash mortar |
+| 🗡 Hang Tuah | melee | 3× keris crits |
+| 🌿 Nenek Kebayan | ranged | slowing hexes (magic) |
+| 🎖 Lim Bo Seng | ranged | armour-piercing rifle, long range |
+| 👑 Radin Mas | ranged | healing aura |
+| 🐢 Kusu Guardian | melee | blocks 3 enemies at once |
+| 🌊 Merlion Guardian | ranged | magic wave splash |
+
+### 🎖 Merits & the Armory
+Clearing levels earns **merit points** (first clear +20, +10 per new star,
++25 per challenge). Spend them in the **Armory** to unlock the six advanced
+towers (Durian, Temple, Wok, Ice Kacang, Mata Sniper, Substation Coil) and
+to recruit heroes, and pick your hero loadout there.
+
+### 💾 Save backup
+Progress autosaves to localStorage. The main menu's **EXPORT SAVE** button
+downloads a `.json` backup; **LOAD SAVE** restores it — handy if the
+browser cache is cleared or you switch machines.
+
 ### 🗺 Regenerating the maps
 The baked geometry lives in `web/js/data/geo.js`. To re-fetch from
 OpenStreetMap (e.g. after tweaking a level spec):
@@ -79,8 +109,14 @@ Raw Overpass responses are cached in `tools/cache/`.
 - **🍈 Durian Launcher** — splash damage from the king of fruits (ground only)
 - **⛩ Talisman Temple** — armour-piercing magic talismans that also slow
 - **🎖 NS Camp** — deploys NSmen who block enemies on the road (movable rally point)
+- **🎯 Mata Sniper Post** — slow, very long-range shots that ignore armour
+- **🔥 Hawker Wok** — flaming splash that leaves enemies burning (ground only)
+- **⚡ Substation Coil** — magic lightning that chains between spirits
+- **🍧 Ice Kacang Cart** — freezing pulse that chills everything in range
 
-Each tower has 3 upgrade levels; sell refunds 60%.
+Each tower has 3 upgrade levels; sell refunds 60%. Build pads are capped at
+12 per level — every placement counts. Each neighbourhood is fought at a
+time of day (🌅 morning / ☀️ day / 🌇 evening / 🌙 night) with matching light.
 
 ### 👹 Enemies (Asian folklore)
 Toyol, Pocong, Pontianak, Manananggal, Jiangshi, Krasue, Orang Minyak,
@@ -108,6 +144,7 @@ damage, spectral ones resist magic, and flying ones ignore roads and soldiers.
         ├── data/
         │   ├── enemies.js  # folklore bestiary
         │   ├── towers.js   # tower stats
+        │   ├── heroes.js   # 10 hero roster
         │   └── levels.js   # 30 levels, 10 map layouts, wave generator
         ├── render.js     # canvas renderer + procedural scenery
         ├── game.js       # simulation (waves, combat, economy)

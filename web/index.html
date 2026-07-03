@@ -16,9 +16,15 @@
     <h1>MERLION<br>DEFENSE</h1>
     <p class="tagline">Hawkers, HDBs &amp; Hantus — defend the Lion City from the spirits of Asian legend</p>
     <button class="big-btn" id="btn-play">▶ &nbsp;PLAY</button>
+    <button class="big-btn secondary" id="btn-armory">🎖 &nbsp;ARMORY</button>
     <button class="big-btn secondary" id="btn-help">📖 &nbsp;HOW TO PLAY</button>
     <button class="big-btn secondary" id="btn-reset">🗑 &nbsp;RESET PROGRESS</button>
-    <p class="credits">30 real neighbourhoods · 3 modes · 4 towers · 14 folklore creatures</p>
+    <div class="save-row">
+      <button class="small-btn" id="btn-export">⬇ EXPORT SAVE</button>
+      <button class="small-btn" id="btn-import">⬆ LOAD SAVE</button>
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
+    </div>
+    <p class="credits">30 real neighbourhoods · 3 modes · 8 towers · 10 heroes · 14 folklore creatures</p>
   </div>
 </div>
 
@@ -29,13 +35,19 @@
     <div class="help-cols">
       <div>
         <h3>🎯 Goal</h3>
-        <p>Stop the hantus before they reach the MRT exit! Each leaked creature costs lives. Lose all lives and the neighbourhood falls.</p>
+        <p>Stop the hantus before they overrun the <b>Temporary Operations Command</b> at the end of the road! Each leaked creature costs lives. Lose all lives and the neighbourhood falls.</p>
         <h3>🏗 Building</h3>
         <p>Tap a <b>concrete pad</b> beside the road to build a tower. Tap a tower to <b>upgrade</b>, <b>sell</b> or move its <b>rally point</b> (NS Camp only).</p>
         <h3>⏩ Waves</h3>
         <p>Press <b>NEXT WAVE</b> early to earn bonus gold. Use the ⏸ / ⏩ buttons to pause or fast-forward.</p>
         <h3>🏆 Challenges</h3>
         <p>Beat a level with ★★★ to unlock its <b>🔥 Heroic</b> and <b>🛡 Iron</b> Challenges — elite waves or one long siege, one life only, each worth a bonus ★.</p>
+        <h3>🦸 Heroes</h3>
+        <p>Your hero fights beside your towers — <b>tap the hero, then tap the ground</b> to move them. Acts 1–2 field one hero; Acts 3–4 field two. Fallen heroes respawn after a short wait.</p>
+        <h3>🎖 Merits</h3>
+        <p>Clearing levels and challenges earns <b>merit points</b>. Spend them in the <b>Armory</b> to unlock new towers and legendary heroes, and choose your hero loadout there.</p>
+        <h3>💾 Saving</h3>
+        <p>Progress autosaves in the browser. Use <b>EXPORT SAVE</b> on the menu to download a backup .json, and <b>LOAD SAVE</b> to restore it.</p>
       </div>
       <div>
         <h3>🗼 Towers</h3>
@@ -43,6 +55,10 @@
         <p><b>🍈 Durian Launcher</b> — lobs the king of fruits. Splash damage, ground only.</p>
         <p><b>⛩ Talisman Temple</b> — enchanted talismans pierce armour, slow spirits. (magic)</p>
         <p><b>🎖 NS Camp</b> — deploys NSmen who block enemies on the road.</p>
+        <p><b>🎯 Mata Sniper Post</b> — slow, long-range shots that ignore armour.</p>
+        <p><b>🔥 Hawker Wok</b> — flaming splash that keeps burning. Ground only.</p>
+        <p><b>⚡ Substation Coil</b> — magic lightning that chains between spirits.</p>
+        <p><b>🍧 Ice Kacang Cart</b> — freezing pulse chills every spirit in range.</p>
         <h3>👹 Know your enemy</h3>
         <p><b>Armoured</b> spirits resist physical hits — use the Temple. <b>Spectral</b> ones resist magic — use durians &amp; 5G. <b>Flying</b> hantus ignore roads and soldiers.</p>
       </div>
@@ -56,11 +72,24 @@
   <div class="levels-header">
     <button class="small-btn" id="btn-levels-back">← MENU</button>
     <h2>Choose a Neighbourhood</h2>
-    <div id="total-stars" class="total-stars">★ 0 / 90</div>
+    <div class="levels-header-right">
+      <button class="small-btn" id="btn-levels-armory">🎖 ARMORY</button>
+      <div id="total-stars" class="total-stars">★ 0 / 150</div>
+    </div>
   </div>
   <div id="level-grid" class="level-grid"></div>
   <!-- Mode picker (Campaign / Heroic / Iron) -->
   <div id="mode-overlay" class="hidden"></div>
+</div>
+
+<!-- ============ ARMORY ============ -->
+<div id="screen-armory" class="screen">
+  <div class="levels-header">
+    <button class="small-btn" id="btn-armory-back">← MENU</button>
+    <h2>🎖 Armory</h2>
+    <div id="armory-merits" class="total-stars">🎖 0 merits</div>
+  </div>
+  <div id="armory-grid" class="armory-grid"></div>
 </div>
 
 <!-- ============ GAME ============ -->
@@ -126,6 +155,7 @@
 <script src="js/audio.js"></script>
 <script src="js/data/enemies.js"></script>
 <script src="js/data/towers.js"></script>
+<script src="js/data/heroes.js"></script>
 <script src="js/data/geo.js"></script>
 <script src="js/data/levels.js"></script>
 <script src="js/render.js"></script>

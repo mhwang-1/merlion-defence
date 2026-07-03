@@ -5,10 +5,21 @@
    streets, and build pads are seated on real open ground beside them.      */
 'use strict';
 
+/* Cap build pads per level — fewer towers means every placement matters.
+   Pads are baked in path order, so even sampling keeps them spread out. */
+const MAX_PADS = 12;
+function trimSpots(spots) {
+  if (spots.length <= MAX_PADS) return spots;
+  const out = [];
+  for (let i = 0; i < MAX_PADS; i++)
+    out.push(spots[Math.floor(i * spots.length / MAX_PADS)]);
+  return out;
+}
+
 /* Layout view over the baked geometry (see geo.js / GEO). */
 const LAYOUTS = GEO.map(g => ({
   paths: g.paths,          // waypoint roads (routed on real streets)
-  spots: g.spots,          // build pads (baked, clear of roads/water/buildings)
+  spots: trimSpots(g.spots), // build pads, capped (baked clear of roads/water)
   landmarks: g.landmarks,  // labelled real-place anchors
   geo: g,                  // full geometry for the renderer
 }));
@@ -21,42 +32,42 @@ const LAYOUTS = GEO.map(g => ({
 */
 const LEVELS = [
   // === ACT 1 · NORTHERN HEARTLANDS (easy) ===
-  { name: 'Ang Mo Kio Central',  diff: 'easy',   layout: 0,  theme: 'town',   waves: 6,  gold: 240, lives: 20 },
-  { name: 'Toa Payoh Town Park', diff: 'easy',   layout: 1,  theme: 'park',   waves: 6,  gold: 240, lives: 20 },
-  { name: 'Serangoon Gardens',   diff: 'easy',   layout: 2,  theme: 'town',   waves: 7,  gold: 250, lives: 20 },
-  { name: 'Yishun Dam',          diff: 'easy',   layout: 3,  theme: 'river',  waves: 7,  gold: 250, lives: 20 },
-  { name: 'Sembawang Hot Spring',diff: 'easy',   layout: 4,  theme: 'park',   waves: 7,  gold: 260, lives: 20 },
-  { name: 'Woodlands Causeway',  diff: 'easy',   layout: 5,  theme: 'coast',  waves: 8,  gold: 260, lives: 20 },
+  { name: 'Ang Mo Kio Central',  diff: 'easy',   layout: 0,  theme: 'town',   tod: 'morning', waves: 6,  gold: 240, lives: 20 },
+  { name: 'Toa Payoh Town Park', diff: 'easy',   layout: 1,  theme: 'park',   tod: 'day',     waves: 6,  gold: 240, lives: 20 },
+  { name: 'Serangoon Gardens',   diff: 'easy',   layout: 2,  theme: 'town',   tod: 'day',     waves: 7,  gold: 250, lives: 20 },
+  { name: 'Yishun Dam',          diff: 'easy',   layout: 3,  theme: 'river',  tod: 'morning', waves: 7,  gold: 250, lives: 20 },
+  { name: 'Sembawang Hot Spring',diff: 'easy',   layout: 4,  theme: 'park',   tod: 'evening', waves: 7,  gold: 260, lives: 20 },
+  { name: 'Woodlands Causeway',  diff: 'easy',   layout: 5,  theme: 'coast',  tod: 'night',   waves: 8,  gold: 260, lives: 20 },
 
   // === ACT 2 · THE EAST (normal) ===
-  { name: 'Hougang Ave 8',       diff: 'normal', layout: 6,  theme: 'town',   waves: 8,  gold: 270, lives: 18 },
-  { name: 'Pasir Ris Park',      diff: 'normal', layout: 7,  theme: 'coast',  waves: 8,  gold: 270, lives: 18 },
-  { name: 'Tampines Hub',        diff: 'normal', layout: 8,  theme: 'town',   waves: 9,  gold: 280, lives: 18 },
-  { name: 'Punggol Waterway',    diff: 'normal', layout: 9,  theme: 'river',  waves: 9,  gold: 300, lives: 18, boss: 'nagaBoss' },
-  { name: 'Changi Village',      diff: 'normal', layout: 10, theme: 'coast',  waves: 9,  gold: 280, lives: 16 },
-  { name: 'Bedok Interchange',   diff: 'normal', layout: 11, theme: 'town',   waves: 9,  gold: 280, lives: 16 },
-  { name: 'Geylang Serai',       diff: 'normal', layout: 12, theme: 'town',   waves: 10, gold: 290, lives: 16 },
-  { name: 'Kampong Glam',        diff: 'normal', layout: 13, theme: 'town',   waves: 10, gold: 290, lives: 16 },
-  { name: 'Little India',        diff: 'normal', layout: 14, theme: 'town',   waves: 10, gold: 290, lives: 16 },
+  { name: 'Hougang Ave 8',       diff: 'normal', layout: 6,  theme: 'town',   tod: 'day',     waves: 8,  gold: 270, lives: 18 },
+  { name: 'Pasir Ris Park',      diff: 'normal', layout: 7,  theme: 'coast',  tod: 'morning', waves: 8,  gold: 270, lives: 18 },
+  { name: 'Tampines Hub',        diff: 'normal', layout: 8,  theme: 'town',   tod: 'day',     waves: 9,  gold: 280, lives: 18 },
+  { name: 'Punggol Waterway',    diff: 'normal', layout: 9,  theme: 'river',  tod: 'evening', waves: 9,  gold: 470, lives: 18, boss: 'nagaBoss' },
+  { name: 'Changi Village',      diff: 'normal', layout: 10, theme: 'coast',  tod: 'morning', waves: 9,  gold: 280, lives: 16 },
+  { name: 'Bedok Interchange',   diff: 'normal', layout: 11, theme: 'town',   tod: 'day',     waves: 9,  gold: 340, lives: 16 },
+  { name: 'Geylang Serai',       diff: 'normal', layout: 12, theme: 'town',   tod: 'night',   waves: 10, gold: 290, lives: 16 },
+  { name: 'Kampong Glam',        diff: 'normal', layout: 13, theme: 'town',   tod: 'evening', waves: 10, gold: 290, lives: 16 },
+  { name: 'Little India',        diff: 'normal', layout: 14, theme: 'town',   tod: 'day',     waves: 10, gold: 290, lives: 16 },
 
   // === ACT 3 · CENTRAL & WEST (hard) ===
-  { name: 'MacRitchie Trail',    diff: 'hard',   layout: 15, theme: 'forest', waves: 10, gold: 300, lives: 15 },
-  { name: 'Bukit Timah Hill',    diff: 'hard',   layout: 16, theme: 'forest', waves: 11, gold: 300, lives: 15 },
-  { name: 'Bukit Batok Quarry',  diff: 'hard',   layout: 17, theme: 'forest', waves: 11, gold: 310, lives: 15 },
-  { name: 'Jurong Lake Gardens', diff: 'hard',   layout: 18, theme: 'park',   waves: 11, gold: 310, lives: 15 },
-  { name: 'Clementi Forest',     diff: 'hard',   layout: 19, theme: 'forest', waves: 12, gold: 320, lives: 15 },
-  { name: 'Haw Par Villa',       diff: 'hard',   layout: 20, theme: 'park',   waves: 12, gold: 330, lives: 12, boss: 'rangda' },
-  { name: 'Queenstown Commons',  diff: 'hard',   layout: 21, theme: 'town',   waves: 12, gold: 380, lives: 12 },
-  { name: 'Tiong Bahru Estate',  diff: 'hard',   layout: 22, theme: 'town',   waves: 12, gold: 330, lives: 12 },
-  { name: 'Chinatown Pagoda St', diff: 'hard',   layout: 23, theme: 'town',   waves: 13, gold: 330, lives: 12 },
-  { name: 'Boat Quay',           diff: 'hard',   layout: 24, theme: 'river',  waves: 13, gold: 340, lives: 12 },
+  { name: 'MacRitchie Trail',    diff: 'hard',   layout: 15, theme: 'forest', tod: 'morning', waves: 10, gold: 300, lives: 15 },
+  { name: 'Bukit Timah Hill',    diff: 'hard',   layout: 16, theme: 'forest', tod: 'day',     waves: 11, gold: 300, lives: 15 },
+  { name: 'Bukit Batok Quarry',  diff: 'hard',   layout: 17, theme: 'forest', tod: 'evening', waves: 11, gold: 310, lives: 15 },
+  { name: 'Jurong Lake Gardens', diff: 'hard',   layout: 18, theme: 'park',   tod: 'day',     waves: 11, gold: 310, lives: 15 },
+  { name: 'Clementi Forest',     diff: 'hard',   layout: 19, theme: 'forest', tod: 'night',   waves: 12, gold: 320, lives: 15 },
+  { name: 'Haw Par Villa',       diff: 'hard',   layout: 20, theme: 'park',   tod: 'evening', waves: 12, gold: 330, lives: 12, boss: 'rangda' },
+  { name: 'Queenstown Commons',  diff: 'hard',   layout: 21, theme: 'town',   tod: 'day',     waves: 12, gold: 380, lives: 12 },
+  { name: 'Tiong Bahru Estate',  diff: 'hard',   layout: 22, theme: 'town',   tod: 'morning', waves: 12, gold: 330, lives: 12 },
+  { name: 'Chinatown Pagoda St', diff: 'hard',   layout: 23, theme: 'town',   tod: 'night',   waves: 13, gold: 330, lives: 12 },
+  { name: 'Boat Quay',           diff: 'hard',   layout: 24, theme: 'river',  tod: 'evening', waves: 13, gold: 340, lives: 12 },
 
   // === ACT 4 · CITY & THE SOUTH (heroic) ===
-  { name: 'Clarke Quay Night',   diff: 'heroic', layout: 25, theme: 'river',  waves: 13, gold: 440, lives: 12 },
-  { name: 'Orchard Road',        diff: 'heroic', layout: 26, theme: 'town',   waves: 14, gold: 350, lives: 10 },
-  { name: 'Marina Barrage',      diff: 'heroic', layout: 27, theme: 'coast',  waves: 14, gold: 350, lives: 10 },
-  { name: 'Sentosa Siloso',      diff: 'heroic', layout: 28, theme: 'coast',  waves: 15, gold: 360, lives: 10 },
-  { name: 'Merlion Park',        diff: 'heroic', layout: 29, theme: 'coast',  waves: 15, gold: 400, lives: 10, boss: 'yamaOx' },
+  { name: 'Clarke Quay Night',   diff: 'heroic', layout: 25, theme: 'river',  tod: 'night',   waves: 13, gold: 440, lives: 12 },
+  { name: 'Orchard Road',        diff: 'heroic', layout: 26, theme: 'town',   tod: 'evening', waves: 14, gold: 350, lives: 10 },
+  { name: 'Marina Barrage',      diff: 'heroic', layout: 27, theme: 'coast',  tod: 'day',     waves: 14, gold: 350, lives: 10 },
+  { name: 'Sentosa Siloso',      diff: 'heroic', layout: 28, theme: 'coast',  tod: 'morning', waves: 15, gold: 360, lives: 10 },
+  { name: 'Merlion Park',        diff: 'heroic', layout: 29, theme: 'coast',  tod: 'night',   waves: 15, gold: 400, lives: 10, boss: 'yamaOx' },
 ];
 
 /* Campaign acts — geographic clusters shown as headers in level select */
@@ -67,8 +78,10 @@ const ACTS = [
   { at: 25, name: 'ACT 4 · City & the South',    blurb: 'Clarke Quay → Merlion Park' },
 ];
 
-/* Difficulty scaling factors */
-const DIFF_SCALE = { easy: 1.0, normal: 1.12, hard: 1.2, heroic: 1.26 };
+/* Difficulty scaling factors — tuned up now that heroes fight alongside
+   the towers (every level fields 1 hero in acts 1-2, 2 heroes in 3-4),
+   and up AGAIN for the 8-tower arsenal + capped pads (12/level).       */
+const DIFF_SCALE = { easy: 1.18, normal: 1.26, hard: 1.44, heroic: 1.52 };
 
 /* ===== Game modes (Kingdom Rush style) =====
    campaign — the story mode; earn up to ★★★.
@@ -87,17 +100,22 @@ const MODES = {
 const IRON_COMBOS_EARLY = [
   ['cell', 'durian'],
   ['cell', 'camp'],
-  ['temple', 'durian'],
-  ['cell', 'temple'],
-  ['cell', 'durian', 'camp'],
+  ['temple', 'wok'],
+  ['mata', 'durian'],
+  ['cell', 'ice'],
+  ['power', 'durian', 'camp'],
   ['temple', 'durian', 'camp'],
+  ['mata', 'wok', 'ice'],
 ];
 /* from li>=9 the magic-resistant flying krasue appears — every combo
-   must carry the physical anti-air cell tower or it's unwinnable       */
+   must carry a PHYSICAL anti-air tower (cell or mata) or it's unwinnable */
 const IRON_COMBOS_LATE = [
   ['cell', 'durian', 'camp'],
-  ['cell', 'temple', 'durian'],
-  ['cell', 'temple', 'camp'],
+  ['cell', 'temple', 'wok'],
+  ['mata', 'power', 'camp'],
+  ['cell', 'ice', 'durian'],
+  ['mata', 'temple', 'ice'],
+  ['cell', 'power', 'wok'],
 ];
 function ironTowers(li) {
   const rng = makeRng(9001 + li * 613);
@@ -135,13 +153,14 @@ function genWaves(li, mode = 'campaign') {
   const pool = enemyPool(li);
   const nPaths = LAYOUTS[lv.layout].paths.length;
   // multi-entrance maps split the defense — discount the wave budget
-  const scale = DIFF_SCALE[lv.diff] / (1 + (nPaths - 1) * 0.18);
+  // (K raised with the pad cap: fewer towers make split lanes pricier)
+  const scale = DIFF_SCALE[lv.diff] / (1 + (nPaths - 1) * 0.26);
   const waves = [];
 
   for (let w = 0; w < lv.waves; w++) {
     const progress = w / (lv.waves - 1);              // 0..1 within level
-    const budget = (50 + li * 5.5) * (1 + progress * 1.7) * scale;
-    const hpMul = (1 + li * 0.022) * (0.85 + progress * 0.3) * scale;
+    const budget = (54 + li * 6.0) * (1 + progress * 1.7) * scale;
+    const hpMul = (1 + li * 0.024) * (0.85 + progress * 0.3) * scale;
     const groups = [];
     let delay = 0;
 
@@ -170,11 +189,12 @@ function genWaves(li, mode = 'campaign') {
     waves.push(groups);
   }
 
-  // Boss finale
+  // Boss finale (×0.85 keeps boss HP near its pre-rebalance level — the
+  // harder REGULAR waves are where the new difficulty lives)
   if (lv.boss) {
     waves[waves.length - 1].push({
       type: lv.boss, count: 1, gap: 0, delay: 5,
-      pathIndex: 0, hpMul: scale * (1 + li * 0.05),
+      pathIndex: 0, hpMul: scale * 0.85 * (1 + li * 0.05),
     });
   }
   return waves;
@@ -195,8 +215,8 @@ function genHeroicWaves(li) {
   for (let w = 0; w < N; w++) {
     const progress = w / (N - 1);
     // wave power ≈ a mid/late campaign wave — the ONE LIFE is the challenge
-    const budget = (38 + li * 2.6) * (0.9 + progress * 1.1) * scale;
-    const hpMul = (1 + li * 0.010) * (0.9 + progress * 0.18) * scale;
+    const budget = (40 + li * 2.8) * (0.9 + progress * 1.1) * scale;
+    const hpMul = (1 + li * 0.011) * (0.9 + progress * 0.18) * scale;
     const groups = [];
     let delay = 0;
     const nGroups = 1 + Math.floor(progress * 1.6 + rng() * 1.3);
@@ -243,8 +263,8 @@ function genIronWaves(li) {
 
   for (let g = 0; g < nGroups; g++) {
     const progress = g / (nGroups - 1);
-    const budget = (28 + li * 1.8) * (0.85 + progress * 0.9) * scale;
-    const hpMul = (1 + li * 0.008) * (0.9 + progress * 0.14) * scale;
+    const budget = (30 + li * 1.9) * (0.85 + progress * 0.9) * scale;
+    const hpMul = (1 + li * 0.009) * (0.9 + progress * 0.14) * scale;
     const biasMax = clamp(Math.floor(pool.length * (0.45 + progress * 0.6)) + 1, Math.min(2, pool.length), pool.length);
     const type = pool[Math.floor(rng() * biasMax)];
     const et = ENEMY_TYPES[type];
@@ -261,7 +281,7 @@ function genIronWaves(li) {
     delay += 10 + rng() * 6;  // groups roll in continuously, with breathing room
   }
   if (lv.boss) {
-    groups.push({ type: lv.boss, count: 1, gap: 0, delay: delay + 4, pathIndex: 0, hpMul: scale * 0.55 });
+    groups.push({ type: lv.boss, count: 1, gap: 0, delay: delay + 4, pathIndex: 0, hpMul: scale * 0.38 });
   }
   return [groups]; // a single mega-wave
 }

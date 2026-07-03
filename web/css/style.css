@@ -53,6 +53,37 @@ body {
   background: var(--panel-light); border: 2px solid #142530; border-radius: 10px; cursor: pointer;
 }
 
+.save-row { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
+.save-row .small-btn:hover { border-color: var(--gold); }
+
+/* ===== Armory ===== */
+#screen-armory { flex-direction: column; padding: 24px; }
+.armory-grid {
+  width: 100%; max-width: 860px; flex: 1; overflow-y: auto;
+  display: grid; grid-template-columns: 1fr; gap: 10px; padding: 6px 6px 30px;
+}
+.armory-card {
+  display: flex; align-items: center; gap: 16px;
+  background: linear-gradient(#31495e, #223342);
+  border: 3px solid #0d1720; border-radius: 14px; padding: 10px 16px;
+  cursor: pointer; transition: transform .08s;
+}
+.armory-card:hover { transform: translateY(-2px); }
+.armory-card.buyable { border-color: var(--gold); }
+.armory-card.owned { border-color: #2e7d32; cursor: pointer; }
+.armory-card.equipped { background: linear-gradient(#2e5a44, #1e3c30); }
+.armory-card.locked { opacity: .55; filter: grayscale(.5); cursor: not-allowed; }
+.armory-card .ac-ico { width: 52px; height: 52px; image-rendering: pixelated; object-fit: contain; flex-shrink: 0; }
+.armory-card .ac-body { flex: 1; }
+.armory-card .ac-name { font-size: 17px; font-weight: bold; color: #fff; }
+.armory-card .ac-kind { font-size: 11px; color: #9fb3bf; font-weight: normal; margin-left: 8px; }
+.armory-card .ac-desc { font-size: 12px; color: #b8c8d2; margin-top: 2px; }
+.armory-card .ac-stats { font-size: 12px; color: #ffd77a; margin-top: 2px; }
+.armory-card .ac-cost { font-size: 15px; font-weight: bold; color: var(--gold); white-space: nowrap; }
+.armory-card.owned .ac-cost { color: #a5d6a7; }
+
+.levels-header-right { display: flex; align-items: center; gap: 12px; }
+
 /* ===== Help ===== */
 .help-box {
   max-width: 860px; max-height: 92vh; overflow-y: auto;
@@ -175,6 +206,7 @@ body {
   background: rgba(20,32,44,.96); border: 3px solid #0d1720; border-radius: 14px;
   padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.6);
   display: flex; gap: 8px;
+  flex-wrap: wrap; max-width: 388px; justify-content: center;
 }
 .popup .p-btn {
   width: 84px; padding: 8px 4px; text-align: center; cursor: pointer;

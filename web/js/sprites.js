@@ -1,6 +1,8 @@
 /* ===== Pixel-art sprite factory =====
-   Sprites are defined as ASCII grids + palettes and baked to offscreen
-   canvases once at load. '.' and ' ' are transparent.                  */
+   Sprites are defined as ASCII grids + palettes, baked to offscreen
+   canvases once at load, then refined through an EPX (Scale2x) 4×
+   upscale + rim-shading pass so everything renders with fine, rounded,
+   shaded pixels instead of raw chunky blocks. '.' / ' ' = transparent. */
 'use strict';
 
 const Sprites = {
@@ -22,7 +24,77 @@ const Sprites = {
         g.fillRect(x, y, 1, 1);
       }
     }
-    this.cache[name] = c;
+    // bake fine version: pad → EPX×2 → EPX×2 → rim shade  (factor 4)
+    const hi = this._shade(this._epx(this._epx(this._pad(c))));
+    hi._f = 4;
+    this.cache[name] = hi;
+  },
+
+  /* 1px transparent border so outlines can round outward */
+  _pad(c) {
+    const p = document.createElement('canvas');
+    p.width = c.width + 2; p.height = c.height + 2;
+    p.getContext('2d').drawImage(c, 1, 1);
+    return p;
+  },
+
+  /* EPX / Scale2x — doubles resolution, rounding diagonal steps */
+  _epx(src) {
+    const w = src.width, h = src.height;
+    const sd = src.getContext('2d').getImageData(0, 0, w, h).data;
+    const out = document.createElement('canvas');
+    out.width = w * 2; out.height = h * 2;
+    const og = out.getContext('2d');
+    const oi = og.createImageData(w * 2, h * 2), od = oi.data;
+    const at = (x, y) => {
+      if (x < 0 || y < 0 || x >= w || y >= h) return 0;
+      const i = (y * w + x) * 4;
+      return sd[i + 3] < 8 ? 0 : (0x1000000 | (sd[i] << 16) | (sd[i + 1] << 8) | sd[i + 2]);
+    };
+    const put = (x, y, v) => {
+      if (!v) return;
+      const i = (y * w * 2 + x) * 4;
+      od[i] = (v >> 16) & 255; od[i + 1] = (v >> 8) & 255; od[i + 2] = v & 255; od[i + 3] = 255;
+    };
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const P = at(x, y);
+        const A = at(x, y - 1), B = at(x + 1, y), C = at(x - 1, y), D = at(x, y + 1);
+        let p1 = P, p2 = P, p3 = P, p4 = P;
+        if (C === A && C !== D && A !== B) p1 = A;
+        if (A === B && A !== C && B !== D) p2 = B;
+        if (D === C && D !== B && C !== A) p3 = C;
+        if (B === D && B !== A && D !== C) p4 = B;
+        put(x * 2, y * 2, p1); put(x * 2 + 1, y * 2, p2);
+        put(x * 2, y * 2 + 1, p3); put(x * 2 + 1, y * 2 + 1, p4);
+      }
+    }
+    og.putImageData(oi, 0, 0);
+    return out;
+  },
+
+  /* subtle rim light on top edges, shadow on bottom edges */
+  _shade(c) {
+    const w = c.width, h = c.height, g = c.getContext('2d');
+    const im = g.getImageData(0, 0, w, h), d = im.data;
+    const src = new Uint8ClampedArray(d);
+    const alpha = (x, y) => (x < 0 || y < 0 || x >= w || y >= h) ? 0 : src[(y * w + x) * 4 + 3];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        if (src[i + 3] < 8) continue;
+        const lum = src[i] * 0.3 + src[i + 1] * 0.6 + src[i + 2] * 0.1;
+        if (alpha(x, y - 1) < 8 && lum > 66) {          // lit top rim
+          d[i]     = Math.min(255, src[i] * 1.28 + 22);
+          d[i + 1] = Math.min(255, src[i + 1] * 1.28 + 22);
+          d[i + 2] = Math.min(255, src[i + 2] * 1.28 + 22);
+        } else if (alpha(x, y + 1) < 8 && lum > 46) {   // shaded bottom rim
+          d[i] = src[i] * 0.68; d[i + 1] = src[i + 1] * 0.68; d[i + 2] = src[i + 2] * 0.68;
+        }
+      }
+    }
+    g.putImageData(im, 0, 0);
+    return c;
   },
 
   get(name) { return this.cache[name]; },
@@ -33,11 +105,12 @@ const Sprites = {
     return this.urlCache[name];
   },
 
-  /** Draw sprite centered at (x, y). */
+  /** Draw sprite centered at (x, y). scale is in ORIGINAL art pixels. */
   draw(ctx, name, x, y, scale = 2, flip = 1) {
     const c = this.cache[name];
     if (!c) return;
-    const w = c.width * scale, h = c.height * scale;
+    const f = c._f || 1;
+    const w = c.width * scale / f, h = c.height * scale / f;
     ctx.imageSmoothingEnabled = false;
     if (flip < 0) {
       ctx.save();
@@ -62,10 +135,12 @@ const Sprites = {
       g.globalCompositeOperation = 'source-atop';
       g.fillStyle = tint;
       g.fillRect(0, 0, c.width, c.height);
+      c._f = src._f || 1;
       this.tintCache[key] = c;
     }
     const c = this.tintCache[key];
-    const w = c.width * scale, h = c.height * scale;
+    const f = c._f || 1;
+    const w = c.width * scale / f, h = c.height * scale / f;
     ctx.imageSmoothingEnabled = false;
     if (flip < 0) {
       ctx.save();
@@ -367,6 +442,74 @@ Sprites.def('t_temple', { o: '#2a0c08', r: '#c53030', d: '#8e1f1f', y: '#e8b13a'
   ".oyyyyyyyyyyo.",
 ]);
 
+// Mata Sniper Post — police watchtower, long scope
+Sprites.def('t_mata', { o: '#0c141c', b: '#2a4a6a', d: '#1c3348', s: '#9aa8b4', w: '#e8f2f8', r: '#d32f2f', k: '#101a24' }, [
+  "....osssso....",
+  "...ossssssro..",
+  "...obwkkwbo...",
+  "...obbbbbbo...",
+  "....odbbdo....",
+  "....obbbbo....",
+  "...os.oo.so...",
+  "...os.oo.so...",
+  "....odbbdo....",
+  "...obbbbbbo...",
+  "...odbbbbdo...",
+  "..obbbbbbbbo..",
+  "..okkkkkkkko..",
+]);
+
+// Hawker Wok — zi char stall, canopy, flaming wok
+Sprites.def('t_wok', { o: '#241006', r: '#c53030', d: '#8e1f1f', w: '#f6e8c8', y: '#ffd23c', f: '#ff7b2e', k: '#3c2214', b: '#5f3a16' }, [
+  ".....offo.....",
+  "....ofyfo.....",
+  ".....offo.....",
+  "....okkkko....",
+  "...okkkkkko...",
+  "..orrrrrrrro..",
+  ".orwrwrwrwro..",
+  "...obbbbbbo...",
+  "...obwwwwbo...",
+  "...obwyywbo...",
+  "...obwwwwbo...",
+  "...obbbbbbo...",
+  "..obb....bbo..",
+]);
+
+// Substation Coil — PUB grid coil, arcing sparks
+Sprites.def('t_power', { o: '#0e161e', s: '#9aa8b4', d: '#5f6e7a', c: '#7ee8ff', y: '#ffd23c', k: '#26303a', b: '#39485c' }, [
+  "..c...cc...c..",
+  "...c.occo.c...",
+  "....occcco....",
+  "....osccso....",
+  ".....osso.....",
+  "....odssdo....",
+  ".....osso.....",
+  "....odssdo....",
+  "....osssso....",
+  "...obbbbbbo...",
+  "...obyybybo...",
+  "...obbbbbbo...",
+  "..okkkkkkkko..",
+]);
+
+// Ice Kacang Cart — shaved-ice mound on a striped cart
+Sprites.def('t_ice', { o: '#122030', w: '#eef6fa', c: '#b8e4f2', b: '#4aa8d8', d: '#2e7bb4', p: '#f48fb1', g: '#7cc47c', k: '#1c3040' }, [
+  ".....owwo.....",
+  "....owwwwo....",
+  "...owcwwcwo...",
+  "...opwgwpwo...",
+  "...owwcwwwo...",
+  "..occcccccco..",
+  "...obbbbbbo...",
+  "..obwbwbwbbo..",
+  "..obbbbbbbbo..",
+  "..obwbwbwbbo..",
+  "..obbbbbbbbo..",
+  "...okk..okk...",
+  "...oo....oo...",
+]);
+
 Sprites.def('t_camp', { o: '#12250e', g: '#4c7a34', d: '#35592a', r: '#c53030' }, [
   ".......orr....",
   ".......orrr...",
@@ -394,6 +537,177 @@ Sprites.def('soldier', { o: '#101c0c', g: '#5a7a3c', d: '#3c5528', f: '#e0b890' 
   "..oggo..",
   "..o..o..",
   "..oo.oo.",
+]);
+
+/* ================= HEROES ================= */
+
+// Sang Nila Utama — royal prince, lion crest
+Sprites.def('h_utama', { o: '#1c1206', y: '#ffd23c', d: '#c8962a', r: '#c53030', f: '#e8bd90', w: '#fff2d0', k: '#141414' }, [
+  "....oyyo....",
+  "...oyyyyo...",
+  "..oyryyryo..",
+  "..offffffo..",
+  "..ofkffkfo..",
+  "...offffo...",
+  "..oryyyyro..",
+  ".oryyyyyyro.",
+  ".orywyywyro.",
+  ".oryyyyyyro.",
+  "..odyyyydo..",
+  "..odd..ddo..",
+  "..oo....oo..",
+]);
+
+// Sang Kancil — the trickster mousedeer
+Sprites.def('h_kancil', { o: '#241206', b: '#a06a34', d: '#7a4e22', w: '#e8d8c0', k: '#141008' }, [
+  ".oo......oo.",
+  ".obo....obo.",
+  "..obboobbo..",
+  "..obbbbbbo..",
+  ".obkbbbbkbo.",
+  ".obbbbbbbbo.",
+  "..obwwwwbo..",
+  "...obbbbo...",
+  "..obbbbbbo..",
+  ".obbdbbdbbo.",
+  "..oddddddo..",
+  "..od.oo.do..",
+  "..oo....oo..",
+]);
+
+// Badang — the strongman
+Sprites.def('h_badang', { o: '#1a0e04', s: '#b57a48', d: '#8a5830', r: '#c53030', k: '#140a06', w: '#f0e0c8' }, [
+  "....oooo....",
+  "...okkkko...",
+  "..osssssso..",
+  "..osksskso..",
+  "..osssssso..",
+  "...oswwso...",
+  ".oossssssoo.",
+  "osossssssoso",
+  "osossssssoso",
+  ".o.orrrro.o.",
+  "...orrrro...",
+  "...odd.ddo..",
+  "...oo...oo..",
+]);
+
+// Samsui Sister — red headgear, blue samfoo
+Sprites.def('h_samsui', { o: '#180c08', r: '#d03028', d: '#9e1f1a', b: '#2a5a8a', n: '#1c4066', f: '#e8bd90', k: '#141008' }, [
+  "..orrrrrro..",
+  ".orrrrrrrro.",
+  ".odrrrrrrdo.",
+  "..offffffo..",
+  "..ofkffkfo..",
+  "...offffo...",
+  "..obbbbbbo..",
+  ".obbbbbbbbo.",
+  ".obnbbbbnbo.",
+  ".obbbbbbbbo.",
+  "..onbbbbno..",
+  "..onn..nno..",
+  "..oo....oo..",
+]);
+
+// Hang Tuah — warrior with keris
+Sprites.def('h_tuah', { o: '#140e06', g: '#2e7a4a', d: '#1e5a34', y: '#ffd23c', f: '#c89058', k: '#141008', s: '#c8ccd4' }, [
+  "...oyyyyo...",
+  "..ogggggo...",
+  "..offffffo..",
+  "..ofkffkfo..",
+  "...offffo..s",
+  "..oggggggos.",
+  ".ogggggggso.",
+  ".ogygggygo..",
+  ".oggggggggo.",
+  "..odggggdo..",
+  "..odggggdo..",
+  "..odd..ddo..",
+  "..oo....oo..",
+]);
+
+// Nenek Kebayan — forest witch
+Sprites.def('h_nenek', { o: '#101408', g: '#4c7a2c', d: '#35591e', w: '#d8d2c4', f: '#caa070', k: '#141008', p: '#7a2fae' }, [
+  "....wwww....",
+  "...owwwwo...",
+  "..owwwwwwo..",
+  "..offffffo..",
+  "..ofkffkfo..",
+  "...offffo.p.",
+  "..oggggggop.",
+  ".ogggggggop.",
+  ".ogpggggpop.",
+  ".ogggggggop.",
+  "..odggggdop.",
+  "..odd..ddo..",
+  "..oo....oo..",
+]);
+
+// Lim Bo Seng — resistance fighter with rifle
+Sprites.def('h_boseng', { o: '#101408', g: '#4a5a3c', d: '#36452c', f: '#e0b890', k: '#141008', b: '#5a3a1a', s: '#8a8f98' }, [
+  "...oooooo...",
+  "..oggggggo..",
+  "..offffffo..",
+  "..ofkffkfo..",
+  "...offffo...",
+  "..ogggggo.s.",
+  ".ogggggggos.",
+  ".ogggggggbs.",
+  ".ogdggggdbo.",
+  ".ogggggggo..",
+  "..odggggdo..",
+  "..odd..ddo..",
+  "..oo....oo..",
+]);
+
+// Radin Mas — golden princess
+Sprites.def('h_radin', { o: '#1a1206', y: '#ffd23c', d: '#c8962a', w: '#fff2d0', f: '#d8a878', k: '#141008', h: '#241a10' }, [
+  "....oyyo....",
+  "...ohhhho...",
+  "..ohhhhhho..",
+  "..offffffo..",
+  "..ofkffkfo..",
+  "...offffo...",
+  "..oywwwwyo..",
+  ".oywwwwwwyo.",
+  ".oywyyyywyo.",
+  ".oywwwwwwyo.",
+  "..owwwwwwo..",
+  "..oww..wwo..",
+  "..oo....oo..",
+]);
+
+// Kusu Guardian — giant turtle spirit
+Sprites.def('h_kusu', { o: '#0c2014', g: '#3f8a5c', d: '#2c6a42', s: '#7ab890', y: '#ffd23c', k: '#0a140c' }, [
+  "....oooo....",
+  "..oosssso...",
+  ".osgggggso..",
+  "osggdggdgso.",
+  "osgdggggdgso",
+  "osggggggggso",
+  "osgdggggdgso",
+  "osggdggdggso",
+  ".osgggggso..",
+  "o.ossssso.o.",
+  "oyo......oyo",
+  ".oo......oo.",
+]);
+
+// Merlion Guardian — living merlion spirit
+Sprites.def('h_merlia', { o: '#12242c', w: '#eef4f6', s: '#c2d4dc', b: '#4aa8d8', d: '#2e7bb4', k: '#182226' }, [
+  "....ooooo...",
+  "...owwwwwo..",
+  "..owswwswo..",
+  "..owkwwkwo..",
+  "..owwwwwwo..",
+  "...owwkko...",
+  "..oswwwwso..",
+  ".obwwwwwwbo.",
+  ".obwsswswbo.",
+  ".obbwwwwbbo.",
+  "..odbbbbdo..",
+  "...odbbdo...",
+  "....oddo....",
 ]);
 
 /* ================= PROJECTILES ================= */
@@ -473,6 +787,29 @@ Sprites.def('portal', { o: '#2a0a44', p: '#7a2fae', v: '#a85ae0', k: '#12041e', 
   ".oppvvvvppo.",
   "..oppppppo..",
   "...oooooo...",
+]);
+
+/* Temporary Operations Command — field HQ tent, radio mast, sandbag ring */
+Sprites.def('command_post', {
+  o: '#141a10', g: '#5a7a3c', d: '#3c5528', t: '#6e8a4a',
+  s: '#9aa8b4', r: '#d32f2f', w: '#f0e8d0', y: '#ffd23c',
+  k: '#20180c', b: '#b09a60', n: '#8a784a',
+}, [
+  "....s...................",
+  "...ss..oooooooooo.......",
+  "...s.oottttttttttoo.....",
+  "...soottggggggggttoo....",
+  "...osggggggggggggggso...",
+  "..oggggggggggggggggggo..",
+  ".oggdgggggggggggggdggo..",
+  ".ogddgwrrwgwrrwgggddgo..",
+  ".ogddgwrrwgwrrwgggddgo..",
+  ".odddggggggggggggdddgo..",
+  ".odddgggokkkkogggdddgo..",
+  "obbbbbbbokkkkobbbbbbbbo.",
+  "obnbbnbbokkkkobbnbbnbbo.",
+  "obbbbbbbokkkkobbbbbbbbo.",
+  "..oooooooooooooooooooo..",
 ]);
 
 /* Merlion for the main menu */

@@ -21,14 +21,23 @@ global.document = {
 
 const load = f => vm.runInThisContext(fs.readFileSync(W(f), 'utf8'), { filename: f });
 ['js/util.js', 'js/audio.js'].forEach(load);
+// deterministic runs: hero crits/stuns/evades roll Math.random
+Math.random = makeRng(123456789);
 Sound.ensure = () => {};
 Object.keys(Sound).forEach(k => { if (typeof Sound[k] === 'function') Sound[k] = () => {}; });
-['js/data/enemies.js', 'js/data/towers.js', 'js/data/geo.js', 'js/data/levels.js', 'js/render.js', 'js/game.js'].forEach(load);
+['js/data/enemies.js', 'js/data/towers.js', 'js/data/heroes.js', 'js/data/geo.js',
+ 'js/data/levels.js', 'js/render.js', 'js/game.js'].forEach(load);
 Renderer.buildBackground = () => {};
 Renderer.initTrains = () => {};
 global.UI = { banner() {}, showEnd() {} };
+// sim plays with everything unlocked (players buy unlocks with merits)
+for (const k of Object.keys(TOWER_TYPES)) Progress.data.towersU[k] = true;
+for (const k of Object.keys(HERO_TYPES)) Progress.data.heroes[k] = true;
+
 
 function simulate(li, mode = 'campaign') {
+  // reasonable hero loadout: a blocker plus a ranged pick for act 3-4
+  Progress.data.loadout = li >= 15 ? ['badang', 'boseng'] : ['utama'];
   Game.start(li, mode);
   // rank pads by distance to nearest path
   const ranked = Game.layout.spots
@@ -44,8 +53,8 @@ function simulate(li, mode = 'campaign') {
   }
   const airFrac = flying / Math.max(1, total);
   let mix = airFrac > 0.35
-    ? ['cell', 'temple', 'cell', 'temple', 'cell', 'temple', 'durian', 'cell', 'temple', 'cell', 'temple', 'cell', 'temple', 'cell', 'temple', 'cell', 'temple', 'cell']
-    : ['cell', 'temple', 'durian', 'cell', 'camp', 'temple', 'durian', 'cell', 'temple', 'durian', 'cell', 'temple', 'cell', 'durian', 'temple', 'cell', 'durian', 'temple'];
+    ? ['cell', 'temple', 'mata', 'cell', 'temple', 'power', 'cell', 'ice', 'temple', 'mata', 'cell', 'temple', 'cell', 'power', 'temple', 'cell', 'mata', 'cell']
+    : ['cell', 'temple', 'durian', 'mata', 'camp', 'wok', 'ice', 'cell', 'temple', 'durian', 'power', 'mata', 'cell', 'wok', 'temple', 'cell', 'durian', 'temple'];
   if (Game.allowedTowers) {
     mix = mix.filter(t => Game.allowedTowers.includes(t));
     while (mix.length < 18) mix.push(Game.allowedTowers[mix.length % Game.allowedTowers.length]);
@@ -94,7 +103,12 @@ for (let i = 0; i < LEVELS.length; i++) {
   if (genWaves(i, 'heroic').length !== 6) throw new Error('heroic must be 6 waves L' + (i + 1));
   if (genWaves(i, 'iron').length !== 1) throw new Error('iron must be 1 wave L' + (i + 1));
   const it = ironTowers(i);
-  if (!it.includes('cell') && !it.includes('temple')) throw new Error('iron combo lacks anti-air L' + (i + 1));
+  // must always have an anti-air tower; from L10 (li>=9) the magic-resistant
+  // flying krasue demands a PHYSICAL anti-air pick (cell or mata)
+  const antiAir = it.some(t => TOWER_TYPES[t].targets === 'both');
+  if (!antiAir) throw new Error('iron combo lacks anti-air L' + (i + 1));
+  if (i >= 9 && !it.includes('cell') && !it.includes('mata'))
+    throw new Error('iron combo lacks physical anti-air L' + (i + 1));
   if (LAYOUTS[i].spots.length < 10) throw new Error('too few build pads L' + (i + 1) + ': ' + LAYOUTS[i].spots.length);
 }
 console.log('✔ 30 levels / wave data validated (campaign + heroic + iron)\n');

@@ -41,7 +41,10 @@ web/js/sprites.js      pixel-art sprites from ASCII grids (Sprites.def/draw)
 web/js/audio.js        WebAudio SFX (Sound.*)
 web/js/data/enemies.js ENEMY_TYPES (folklore creatures; armor=physical resist,
                        resist=magic resist, flying, boss, lives cost)
-web/js/data/towers.js  TOWER_TYPES (cell/durian/temple/camp), 3 levels each
+web/js/data/towers.js  TOWER_TYPES (cell/durian/temple/camp + mata/wok/
+                       power/ice), 3 levels each; TOWER_SPRITE name map
+web/js/data/heroes.js  HERO_TYPES (10 local-legend heroes), heroSlots(li)
+                       (1 hero acts 1-2, 2 heroes acts 3-4), HERO_RESPAWN
 web/js/data/geo.js     ★ AUTO-GENERATED — do not hand-edit (see Maps below)
 web/js/data/levels.js  LAYOUTS (view over GEO), LEVELS (30), ACTS, MODES,
                        ironTowers(), genWaves(li, mode) + heroic/iron variants
@@ -94,21 +97,48 @@ real streets. MRT trains animate on real viaducts.
 - **iron** — unlocked by ★★★ campaign; ONE mega-wave (`genIronWaves`),
   1 life, restricted tower set (`ironTowers(li)`, deterministic), +1 star.
   **Invariant:** levels ≥9 face flying magic-resistant krasue, so late combos
-  (`IRON_COMBOS_LATE`) must always include `cell`. sim.js asserts anti-air.
-- Total 5★/level = 150. `Progress` keys: `stars{}`, `heroic{}`, `iron{}` in
-  localStorage `merlion-defense-v1`.
-- `Game.allowedTowers` (null = all) gates builds + build menu.
+  (`IRON_COMBOS_LATE`) must always include a PHYSICAL anti-air tower
+  (`cell` or `mata`). sim.js asserts anti-air for every combo.
+- Total 5★/level = 150. `Progress` keys: `stars{}`, `heroic{}`, `iron{}`,
+  `merits`, `heroes{}`, `towersU{}`, `loadout[]` in localStorage
+  `merlion-defense-v1`. `Progress.normalize()` migrates old saves.
+- `Game.allowedTowers` (null = armory-gated) gates builds + build menu;
+  in iron mode it overrides the armory unlocks entirely.
+
+## Heroes / merits / armory
+
+- Heroes spawn near the exit of path 0 (`Game.spawnHeroes`), controlled by
+  tap-hero-then-tap-ground (`UI.onCanvasTap` → `Game.orderHero`). Melee
+  heroes block like soldiers (share `e.blockedBy`); ranged fire 'hero'
+  projectiles. Specials: aoe/crit/stun/splash/pierce/slow/evade/heal/block.
+- Merit economy: first campaign clear +20, +10 per newly earned star,
+  +25 per challenge clear (`Progress.complete/completeChallenge` return the
+  amount). Armory (`UI.renderArmory`, `#screen-armory`) sells durian/temple
+  towers (`TOWER_MERIT_COST`) and heroes (`HERO_TYPES[k].cost`); cell/camp
+  and Sang Nila Utama are free. Loadout max 2 heroes.
+- Save backup: `Progress.exportJSON()/importJSON()` wired to EXPORT/LOAD
+  SAVE buttons on the main menu (JSON file download / file picker).
+- Dev param: `?showarmory=1&merits=200` opens the Armory with merits.
+- Hero specials roll `Math.random`; sim.js pins `Math.random = makeRng(...)`
+  for reproducible balance runs, and unlocks all towers/heroes for the AI
+  (loadout: utama early, badang+boseng from L16).
+- Sprites are auto-refined at load: `Sprites.def` bakes ASCII art through
+  pad → EPX×2 → EPX×2 → rim-shade (canvas `_f = 4`); `draw()` divides by
+  `_f`, so `scale` is still in original art pixels.
 
 ## Balance knobs
 
 All wave gen is deterministic via `makeRng(seed)` — same level+mode always
 produces identical waves. In `levels.js`:
-- Campaign: `budget = (50 + li*5.5) * (1 + progress*1.7) * scale`
-- Heroic:   `(38 + li*2.6) * (0.9 + progress*1.1) * scale`, boss hpMul ×0.55
-- Iron:     `(28 + li*1.8) * (0.85 + progress*0.9) * scale`, group delay
-  10–16s apart, boss hpMul ×0.55
+- Campaign: `budget = (54 + li*6.0) * (1 + progress*1.7) * scale`,
+  boss hpMul ×0.85
+- Heroic:   `(40 + li*2.8) * (0.9 + progress*1.1) * scale`, boss hpMul ×0.55
+- Iron:     `(30 + li*1.9) * (0.85 + progress*0.9) * scale`, group delay
+  10–16s apart, boss hpMul ×0.38 (restricted towers can't burst a boss)
 - `scale = DIFF_SCALE[diff] / (1 + (nPaths-1)*K)` — multi-entrance discount;
-  K=0.18 campaign, **0.45 for 1-life modes** (split defense hurts much more).
+  K=0.26 campaign, **0.45 for 1-life modes** (split defense hurts much more).
+- Build pads are capped at `MAX_PADS = 12` (`trimSpots` in levels.js evenly
+  samples the baked geo spots, which are stored in path order).
 - Challenge starting gold bonus: iron +220, heroic +120 (in `Game.start`).
 These numbers were tuned against sim.js — if you touch them, re-run
 `--all-modes` and re-tune until green.
@@ -117,6 +147,12 @@ These numbers were tuned against sim.js — if you touch them, re-run
 
 - `layout index == level index` (30 levels, 30 GEO entries). Adding a level
   means adding a SPEC + refetch + a LEVELS row.
+- Every LEVELS row has a `tod` (morning/day/evening/night). `TIMES_OF_DAY`
+  in render.js bakes a tint (+street lamps at dusk/night) into the
+  background and adds a live overlay each frame.
+- The defended objective at path exits is the Temporary Operations Command
+  (`Renderer.opsCommand`, sprite `command_post`) — replaced the old MRT
+  station, which looked wrong in parks/dams.
 - `enemyPool(li)` unlocks enemy types progressively; unitCost formula
   `bounty*1.6 + hp/22` controls pack sizes.
 - sim.js stubs `Renderer.buildBackground` AND `Renderer.initTrains` — if you
