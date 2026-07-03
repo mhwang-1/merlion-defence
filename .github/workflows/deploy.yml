@@ -22,7 +22,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # .nojekyll makes Pages serve the raw files verbatim (no Jekyll build),
       # so nothing starting with "_" gets dropped and there's no processing lag.
@@ -30,10 +30,10 @@ jobs:
         run: echo "" > web/.nojekyll
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: web
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
