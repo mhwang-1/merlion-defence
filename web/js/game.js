@@ -102,7 +102,7 @@ const Game = {
     this.autoWaveTimer = 0;
     Sound.wave();
     UI.banner(this.waveIndex === this.waves.length - 1
-      ? '☠ FINAL WAVE ☠'
+      ? 'FINAL WAVE'
       : `Wave ${this.waveIndex + 1}`);
 
     for (const grp of this.waves[this.waveIndex]) {
@@ -328,7 +328,7 @@ const Game = {
               : towerStats(s.tower).respawn;
             for (const e2 of this.enemies) if (e2.blockedBy === s) e2.blockedBy = null;
             this.poof(s.x, s.y);
-            if (s.isHero) this.floatText(s.x, s.y - 14, `${s.def.emoji} down!`, '#ef9a9a');
+            if (s.isHero) this.floatText(s.x, s.y - 14, `${s.def.name} down!`, '#ef9a9a');
           }
         }
         continue; // stand still while fighting
@@ -405,7 +405,7 @@ const Game = {
           h.dead = false; h.hp = h.maxHp;
           h.x = h.hx; h.y = h.hy; h.target = null;
           this.poof(h.x, h.y);
-          this.floatText(h.x, h.y - 16, `${h.def.emoji} returns!`, '#a5d6a7');
+          this.floatText(h.x, h.y - 16, `${h.def.name} returns!`, '#a5d6a7');
         }
         continue;
       }

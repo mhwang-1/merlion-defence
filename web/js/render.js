@@ -12,10 +12,10 @@ const THEMES = {
 /* Time-of-day ambience — baked tint on the background + live overlay,
    with warm street lamps along the enemy route at dusk / night. */
 const TIMES_OF_DAY = {
-  morning: { icon: '🌅', name: 'Morning', bake: 'rgba(255,196,120,.13)', live: 'rgba(255,170,90,.05)' },
-  day:     { icon: '☀️', name: 'Day',     bake: null,                    live: null },
-  evening: { icon: '🌇', name: 'Evening', bake: 'rgba(255,116,56,.17)',  live: 'rgba(110,50,130,.10)', lamps: 'rgba(255,200,110,.28)' },
-  night:   { icon: '🌙', name: 'Night',   bake: 'rgba(18,28,78,.34)',    live: 'rgba(10,18,56,.16)',   lamps: 'rgba(255,200,110,.38)' },
+  morning: { name: 'Morning', bake: 'rgba(255,196,120,.13)', live: 'rgba(255,170,90,.05)' },
+  day:     { name: 'Day',     bake: null,                    live: null },
+  evening: { name: 'Evening', bake: 'rgba(255,116,56,.17)',  live: 'rgba(110,50,130,.10)', lamps: 'rgba(255,200,110,.28)' },
+  night:   { name: 'Night',   bake: 'rgba(18,28,78,.34)',    live: 'rgba(10,18,56,.16)',   lamps: 'rgba(255,200,110,.38)' },
 };
 
 /* road stroke widths by OSM class (0 motorway/trunk … 4 service) */
@@ -25,14 +25,32 @@ const ROAD_FILL  = '#8a8f98';
 const MINOR_FILL = '#9aa0a8';
 
 const Renderer = {
-  bg: null,          // cached background canvas
+  bg: null,          // cached background canvas (with the enemy dirt route)
+  bgPre: null,       // background before the route is carved (for the intro reveal)
+  reveal: null,      // intro "road → enemy path" reveal animation state
+  revealPaths: [],   // built enemy paths used by the reveal
   tod: null,         // active time-of-day config
   railPaths: [],     // built rail polylines for the train animation
   trains: [],        // animated trains { path, d, speed, dir }
+  vehicles: [],      // ambient cars & buses on non-route roads
   people: [],        // ambient pixel people near map features
 
-  /** Pre-render static background for a level. */
+  /** Pre-render static backgrounds for a level: one bake WITH the enemy
+      dirt route and one without, so the level intro can animate the
+      neighbourhood road being "converted" into the invasion path. */
   buildBackground(level, layout, paths) {
+    this.bg = this._bake(level, layout, paths, true);
+    this.bgPre = this._bake(level, layout, paths, false);
+    this.revealPaths = paths;
+    const max = Math.max(...paths.map(p => p.total));
+    this.reveal = { d: 0, max, speed: Math.max(240, max / 3.0), done: false, dust: [] };
+    const geo = layout.geo;
+    this.initTrains(geo);
+    this.initPeople(geo, layout, level);
+    this.initVehicles(geo, paths);
+  },
+
+  _bake(level, layout, paths, withRoute) {
     const theme = THEMES[level.theme] || THEMES.town;
     const geo = layout.geo;
     const c = document.createElement('canvas');
@@ -99,6 +117,16 @@ const Renderer = {
       this.strokePoly(g, w);
     }
 
+    // ---- footpaths: concrete pavements flanking every carriageway ----
+    for (const r of geo.roads) {
+      if (r.c >= 4) continue;
+      this.strokePath(g, r.p, ROAD_W[r.c] + (r.c <= 2 ? 18 : 14), 'rgba(60,66,74,.35)'); // kerb
+    }
+    for (const r of geo.roads) {
+      if (r.c >= 4) continue;
+      this.strokePath(g, r.p, ROAD_W[r.c] + (r.c <= 2 ? 16 : 12), '#b7bbc1');            // pavement
+    }
+
     // ---- real roads, small to large so big roads sit on top ----
     const byClass = [[], [], [], [], []];
     for (const r of geo.roads) byClass[r.c].push(r);
@@ -119,22 +147,27 @@ const Renderer = {
     }
 
     // ---- the ENEMY ROUTE: highlighted so it reads as "the path" ----
-    for (const path of paths) {
-      this.strokePath(g, path.points, 40, '#6d5a38');
-      this.strokePath(g, path.points, 34, '#9d8663');
-      this.strokePath(g, path.points, 30, '#b09878');
-      // fine dirt texture: pebbles + ruts along the trail
-      const bp = buildPath(path.points);
-      for (let d = 6; d < bp.total; d += 7) {
-        const p = pointAt(bp, d);
-        const off = (rng() - 0.5) * 22;
-        g.fillStyle = rng() < 0.5 ? 'rgba(255,244,214,.20)' : 'rgba(60,44,20,.18)';
-        g.fillRect(Math.round(p.x - p.dy * off) - 1, Math.round(p.y + p.dx * off) - 1, 2 + (rng() < 0.3 ? 1 : 0), 2);
+    // (uses its own rng so both bakes keep the main rng in lockstep —
+    //  everything OUTSIDE the route corridor must be pixel-identical)
+    if (withRoute) {
+      const rngR = makeRng(777 + LEVELS.indexOf(level) * 13);
+      for (const path of paths) {
+        this.strokePath(g, path.points, 40, '#6d5a38');
+        this.strokePath(g, path.points, 34, '#9d8663');
+        this.strokePath(g, path.points, 30, '#b09878');
+        // fine dirt texture: pebbles + ruts along the trail
+        const bp = buildPath(path.points);
+        for (let d = 6; d < bp.total; d += 7) {
+          const p = pointAt(bp, d);
+          const off = (rngR() - 0.5) * 22;
+          g.fillStyle = rngR() < 0.5 ? 'rgba(255,244,214,.20)' : 'rgba(60,44,20,.18)';
+          g.fillRect(Math.round(p.x - p.dy * off) - 1, Math.round(p.y + p.dx * off) - 1, 2 + (rngR() < 0.3 ? 1 : 0), 2);
+        }
+        g.save();
+        g.setLineDash([12, 10]);
+        this.strokePath(g, path.points, 3, 'rgba(255,244,200,.75)');
+        g.restore();
       }
-      g.save();
-      g.setLineDash([12, 10]);
-      this.strokePath(g, path.points, 3, 'rgba(255,244,200,.75)');
-      g.restore();
     }
 
     // ---- sports pitches / courts (real, with markings) ----
@@ -179,7 +212,7 @@ const Renderer = {
     // ---- entrance / defended objective markers ----
     for (const path of paths) {
       const p0 = path.points[0], pn = path.points[path.points.length - 1];
-      this.portal(g, p0[0], p0[1]);
+      if (withRoute) this.portal(g, p0[0], p0[1]);
       this.opsCommand(g, pn[0], pn[1]);
     }
 
@@ -253,12 +286,13 @@ const Renderer = {
     this.parkTrees(g, geo, layout, paths, theme, rng);
 
     // ---- scenery decorations on open ground ----
-    const decos = { hdb: 14, trees: 24, jungle: 32, coast: 22, shophouse: 12 }[theme.deco];
+    const decos = { hdb: 26, trees: 44, jungle: 56, coast: 34, shophouse: 22 }[theme.deco];
     let placed = 0, tries = 0;
-    while (placed < decos && tries < 900) {
+    while (placed < decos && tries < 1600) {
       tries++;
       const x = 40 + rng() * 880, y = 60 + rng() * 500;
       if (!this.openGround(geo, layout, paths, x, y)) continue;
+      if (!this.clearOfBuildings(geo, x, y, 11)) continue;
       this.deco(g, theme.deco, x, y, rng);
       placed++;
     }
@@ -284,9 +318,18 @@ const Renderer = {
       g.fillRect(0, 0, 960, 600);
     }
 
-    this.bg = c;
-    this.initTrains(geo);
-    this.initPeople(geo, layout, level);
+    return c;
+  },
+
+  /* canopy clearance: a sprite centred at (x,y) must not hang over a
+     rooftop — check a ring of sample points, not just the centre */
+  clearOfBuildings(geo, x, y, r) {
+    for (const b of geo.buildings) {
+      for (const [ox, oy] of [[0, 0], [-r, 0], [r, 0], [0, -r], [0, r], [-r, -r], [r, -r]]) {
+        if (pointInPolyR(b.p, x + ox, y + oy)) return false;
+      }
+    }
+    return true;
   },
 
   openGround(geo, layout, paths, x, y) {
@@ -304,6 +347,177 @@ const Renderer = {
     for (const lm of (layout.landmarks || [])) if (dist(x, y, lm.x, lm.y) < 60) return false;
     for (const line of geo.rail) if (distToLinePts(line, x, y) < 22) return false;
     return true;
+  },
+
+  /* ---------- ambient traffic (cars & buses on non-route roads) ---------- */
+
+  initVehicles(geo, paths) {
+    this.vehicles = [];
+    const CAR_COLORS = ['#d8dade', '#3f9bd8', '#e5533c', '#f2b632', '#8892a0', '#4a4e58', '#f0ede2'];
+    for (const r of geo.roads) {
+      if (r.c >= 4) continue;                       // no traffic on service lanes
+      if (this.vehicles.length >= 30) break;
+      const bp = buildPath(r.p);
+      if (bp.total < 90) continue;
+      // skip roads the enemy route was carved over (they're dirt now)
+      let clear = 0, samples = 0;
+      for (let d = 0; d <= bp.total; d += 36) {
+        const p = pointAt(bp, d);
+        samples++;
+        let minD = Infinity;
+        for (const path of paths) minD = Math.min(minD, distToPath(path, p.x, p.y));
+        if (minD > 32) clear++;
+      }
+      if (!samples || clear / samples < 0.75) continue;
+      const count = Math.min(3, Math.max(1, Math.round(bp.total / 300)));
+      for (let i = 0; i < count && this.vehicles.length < 30; i++) {
+        const bus = Math.random() < 0.22;
+        this.vehicles.push({
+          path: bp,
+          d: Math.random() * bp.total,
+          dir: Math.random() < 0.5 ? 1 : -1,
+          speed: bus ? 40 + Math.random() * 8 : 55 + Math.random() * 28,
+          len: bus ? 17 : 9,
+          wid: bus ? 6 : 5,
+          bus,
+          color: bus ? (Math.random() < 0.5 ? '#3fae6a' : '#c73a3a') : CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)],
+          wait: Math.random() * 2,
+          off: Math.min(7, ROAD_W[r.c] / 4 + 0.5),  // keep-left lane offset
+        });
+      }
+    }
+  },
+
+  updateVehicles(dt) {
+    for (const v of this.vehicles) {
+      if (v.wait > 0) { v.wait -= dt; continue; }
+      v.d += v.speed * v.dir * dt;
+      if (v.d > v.path.total - 4) { v.d = v.path.total - 4; v.dir = -1; v.wait = 0.6 + Math.random() * 2.5; }
+      if (v.d < 4) { v.d = 4; v.dir = 1; v.wait = 0.6 + Math.random() * 2.5; }
+    }
+  },
+
+  drawVehicles(ctx) {
+    for (const v of this.vehicles) {
+      const a = pointAt(v.path, Math.max(0, v.d - v.len / 2));
+      const b = pointAt(v.path, Math.min(v.path.total, v.d + v.len / 2));
+      // travel direction (flip when returning) — drive on the LEFT
+      let tx = (b.x - a.x), ty = (b.y - a.y);
+      const tl = Math.hypot(tx, ty) || 1;
+      tx = tx / tl * v.dir; ty = ty / tl * v.dir;
+      const cx = (a.x + b.x) / 2 + ty * v.off, cy = (a.y + b.y) / 2 - tx * v.off;
+      const ang = Math.atan2(ty, tx);
+      const L = v.len, W = v.wid;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(ang);
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,.25)';
+      ctx.fillRect(-L / 2 + 1, -W / 2 + 2, L, W);
+      // body
+      ctx.fillStyle = v.color;
+      ctx.fillRect(-L / 2, -W / 2, L, W);
+      if (v.bus) {
+        // roof stripe + window row
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.fillRect(-L / 2 + 1, -W / 2 + 1, L - 2, 2);
+        ctx.fillStyle = '#324a5e';
+        for (let wx = -L / 2 + 2; wx < L / 2 - 3; wx += 3) ctx.fillRect(wx, -1, 2, 2);
+        ctx.fillRect(L / 2 - 2, -W / 2 + 1, 1, W - 2);   // windscreen
+      } else {
+        // windscreen + rear window
+        ctx.fillStyle = '#324a5e';
+        ctx.fillRect(L / 2 - 4, -W / 2 + 1, 2, W - 2);
+        ctx.fillRect(-L / 2 + 1, -W / 2 + 1, 2, W - 2);
+        // roof highlight
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
+        ctx.fillRect(-L / 2 + 3, -W / 2 + 1, L - 7, 1);
+      }
+      ctx.restore();
+    }
+  },
+
+  /* ---------- level-intro reveal: the road is carved into the
+     enemies' dirt route, portal-to-HQ, with a dust frontier ---------- */
+
+  updateReveal(dt) {
+    const r = this.reveal;
+    if (!r || r.done) return;
+    const prev = r.d;
+    r.d = Math.min(r.max, r.d + r.speed * dt);
+    // dust puffs at each path frontier
+    for (const p of this.revealPaths) {
+      if (prev >= p.total) continue;
+      const pt = pointAt(p, Math.min(r.d, p.total));
+      for (let i = 0; i < 2; i++) {
+        r.dust.push({
+          x: pt.x + (Math.random() - 0.5) * 26,
+          y: pt.y + (Math.random() - 0.5) * 26,
+          vx: (Math.random() - 0.5) * 22, vy: -8 - Math.random() * 16,
+          r: 2 + Math.random() * 3.5, life: 0.5 + Math.random() * 0.4, t: 0,
+        });
+      }
+    }
+    for (const d of r.dust) { d.t += dt; d.x += d.vx * dt; d.y += d.vy * dt; }
+    r.dust = r.dust.filter(d => d.t < d.life);
+    if (r.d >= r.max && !r.dust.length) {
+      r.done = true;
+      this.bgPre = null;      // free the pre-route bake
+      this._maskC = this._compC = null;
+    }
+  },
+
+  drawBackground(ctx) {
+    const r = this.reveal;
+    if (!r || r.done || !this.bgPre) {
+      if (this.bg) ctx.drawImage(this.bg, 0, 0);
+      return;
+    }
+    // base: the untouched neighbourhood
+    ctx.drawImage(this.bgPre, 0, 0);
+    // masked overlay: the dirt-route bake, revealed up to distance r.d
+    if (!this._maskC) {
+      this._maskC = document.createElement('canvas');
+      this._maskC.width = 960; this._maskC.height = 600;
+      this._compC = document.createElement('canvas');
+      this._compC.width = 960; this._compC.height = 600;
+    }
+    const mg = this._maskC.getContext('2d');
+    mg.clearRect(0, 0, 960, 600);
+    mg.lineCap = 'round'; mg.lineJoin = 'round';
+    mg.strokeStyle = '#fff'; mg.lineWidth = 52;
+    for (const p of this.revealPaths) {
+      const end = Math.min(r.d, p.total);
+      if (end < 2) continue;
+      mg.beginPath();
+      mg.moveTo(p.points[0][0], p.points[0][1]);
+      let drawn = 0;
+      for (const s of p.segs) {
+        if (s.start + s.len <= end) { mg.lineTo(s.x2, s.y2); drawn = s.start + s.len; }
+        else if (s.start < end) {
+          const t = (end - s.start) / s.len;
+          mg.lineTo(lerp(s.x1, s.x2, t), lerp(s.y1, s.y2, t));
+          drawn = end;
+          break;
+        }
+      }
+      mg.stroke();
+      // portal area is always revealed first (it sits at d=0)
+      mg.beginPath(); mg.arc(p.points[0][0], p.points[0][1], 40, 0, 7); mg.fill();
+    }
+    const cg = this._compC.getContext('2d');
+    cg.clearRect(0, 0, 960, 600);
+    cg.drawImage(this.bg, 0, 0);
+    cg.globalCompositeOperation = 'destination-in';
+    cg.drawImage(this._maskC, 0, 0);
+    cg.globalCompositeOperation = 'source-over';
+    ctx.drawImage(this._compC, 0, 0);
+    // dust frontier
+    for (const d of r.dust) {
+      const a = 1 - d.t / d.life;
+      ctx.fillStyle = `rgba(148,116,72,${(0.55 * a).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(d.x, d.y, d.r * (1 + d.t * 1.6), 0, 7); ctx.fill();
+    }
   },
 
   /* ---------- MRT trains (animated on real viaducts) ---------- */
@@ -1021,14 +1235,15 @@ const Renderer = {
     for (const p of (geo.parks || [])) {
       const bb = this.polyBounds(p);
       if (bb.w < 24 || bb.h < 24) continue;
-      const want = Math.min(26, Math.max(3, Math.round((bb.w * bb.h) / 5200)));
+      const want = Math.min(40, Math.max(4, Math.round((bb.w * bb.h) / 3400)));
       let placed = 0, tries = 0;
-      while (placed < want && tries < want * 14 && total < 120) {
+      while (placed < want && tries < want * 16 && total < 220) {
         tries++;
         const x = bb.x + rng() * bb.w, y = bb.y + rng() * bb.h;
         if (x < 20 || x > 940 || y < 46 || y > 580) continue;
         if (!pointInPolyR(p, x, y)) continue;
         if (!this.openGroundLoose(geo, layout, paths, x, y)) continue;
+        if (!this.clearOfBuildings(geo, x, y, 10)) continue;
         const s = pool[Math.floor(rng() * pool.length)];
         Sprites.draw(g, s, x, y, s === 'bush' ? 2.4 : 2.6 + rng() * 1.2);
         placed++; total++;
@@ -1048,6 +1263,7 @@ const Renderer = {
         const x = p.x - p.dy * off * side, y = p.y + p.dx * off * side;
         if (x < 24 || x > 936 || y < 40 || y > 576) continue;
         if (!this.openGroundLoose(geo, layout, paths, x, y)) continue;
+        if (!this.clearOfBuildings(geo, x, y, 8)) continue;
         const r = rng();
         if (r < 0.30) Sprites.draw(g, 'bus_stop', x, y, 2.6);
         else if (r < 0.55) Sprites.draw(g, 'lamp_post', x, y - 4, 2.4);
@@ -1080,7 +1296,10 @@ const Renderer = {
   draw(ctx, game) {
     ctx.clearRect(0, 0, 960, 600);
     ctx.imageSmoothingEnabled = false;
-    if (this.bg) ctx.drawImage(this.bg, 0, 0);
+    this.drawBackground(ctx);   // static bake (+ intro route-reveal)
+
+    // ambient cars & buses on the untouched roads
+    this.drawVehicles(ctx);
 
     // animated MRT trains on the viaducts
     this.drawTrains(ctx);

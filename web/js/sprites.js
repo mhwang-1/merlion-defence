@@ -1623,6 +1623,83 @@ Sprites.def('ui_sword', { o: '#2a1c08', s: '#d8e4ec', w: '#f6fbff', y: '#ffd23c'
   "obo..oo...",
 ]);
 
+Sprites.def('ui_heart', { o: '#3a0f10', r: '#e5533c', l: '#ff8a70', d: '#b23325' }, [
+  "..oo..oo..",
+  ".orroodro.",
+  "orlrrrddro",
+  "orllrrdddo",
+  "orlrrrdddo",
+  ".orrrdddo.",
+  "..orrddo..",
+  "...orro...",
+  "....oo....",
+]);
+
+Sprites.def('ui_coin', { o: '#3a2a08', y: '#ffd23c', d: '#c8962a', w: '#fff2c0' }, [
+  "...oooo...",
+  "..oyyyyo..",
+  ".oywwyydo.",
+  "oyywoyyydo",
+  "oywo.oyydo",
+  "oywooyyydo",
+  "oyywyyyddo",
+  ".oyyyyddo.",
+  "..oyyddo..",
+  "...oooo...",
+]);
+
+Sprites.def('ui_wave', { o: '#0e2a44', b: '#3f9bd8', l: '#9adcf8', w: '#e8f8ff' }, [
+  "..........",
+  "..oo......",
+  ".olwo..oo.",
+  "olwlo.olwo",
+  "olblooblbo",
+  "obbbbobbbo",
+  "obbbbbbbbo",
+  ".obbbbbbo.",
+  "..oooooo..",
+  "..........",
+]);
+
+Sprites.def('ui_flame', { o: '#3a1206', r: '#e5533c', y: '#ffd23c', w: '#fff2c0' }, [
+  "....oo....",
+  "...oro....",
+  "..orrro.o.",
+  ".orryrooro",
+  ".orryrrrro",
+  "orryyyrrro",
+  "orrywyyro.",
+  "orywwwyro.",
+  ".oywwwyo..",
+  "..ooooo...",
+]);
+
+Sprites.def('ui_shield', { o: '#1c2836', s: '#8fa8c0', l: '#d8e4ec', d: '#5a7288', y: '#ffd23c' }, [
+  "oooooooooo",
+  "olssssssdo",
+  "olsyyyysdo",
+  "olsyssysdo",
+  "olsyssysdo",
+  "olsyyyysdo",
+  ".olssssdo.",
+  ".olssssdo.",
+  "..olssdo..",
+  "...oooo...",
+]);
+
+Sprites.def('ui_flag', { o: '#2a1c08', r: '#e5533c', d: '#b23325', t: '#8a5a2a' }, [
+  "oo........",
+  "otorrrrro.",
+  "otorrrdro.",
+  "otorrrrdo.",
+  "otorrddro.",
+  "otorrrrro.",
+  "otoooooo..",
+  "oto.......",
+  "oto.......",
+  "oo........",
+]);
+
 /* Merlion — drawn from the Merlion Park statue: large lion head with a
    layered swept-back mane, open mouth spouting water, broad chest
    tapering into a short scaled fish body, tail fin curling up behind,

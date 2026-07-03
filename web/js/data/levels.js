@@ -91,9 +91,9 @@ const DIFF_SCALE = { easy: 1.26, normal: 1.44, hard: 1.52, heroic: 1.64 };
    heroic — 6 brutal waves of the level's toughest creatures, ONE life.
    iron   — one long unbroken siege, ONE life, and only some towers work.  */
 const MODES = {
-  campaign: { name: 'Campaign',         icon: '⚔',  desc: 'The story mode. Keep lives to earn up to ★★★.' },
-  heroic:   { name: 'Heroic Challenge', icon: '🔥', desc: '6 elite waves. One life. No mistakes.' },
-  iron:     { name: 'Iron Challenge',   icon: '🛡', desc: 'One endless siege. One life. Limited towers.' },
+  campaign: { name: 'Campaign',         sprite: 'ui_sword',  desc: 'The story mode. Keep lives to earn up to ★★★.' },
+  heroic:   { name: 'Heroic Challenge', sprite: 'ui_flame',  desc: '6 elite waves. One life. No mistakes.' },
+  iron:     { name: 'Iron Challenge',   sprite: 'ui_shield', desc: 'One endless siege. One life. Limited towers.' },
 };
 
 /* Iron Challenge: which towers stay online (deterministic per level).

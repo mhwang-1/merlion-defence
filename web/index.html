@@ -15,7 +15,7 @@
 <!-- ============ MAIN MENU ============ -->
 <div id="screen-menu" class="screen active">
   <div class="menu-box">
-    <div class="title-merlion">🦁</div>
+    <div class="title-merlion"></div>
     <h1>MERLION<br>DEFENSE</h1>
     <p class="tagline">Hawkers, HDBs &amp; Hantus — defend the Lion City from the spirits of Asian legend</p>
     <button class="big-btn" id="btn-play">PLAY</button>
@@ -37,32 +37,32 @@
     <h2>How to Play</h2>
     <div class="help-cols">
       <div>
-        <h3>🎯 Goal</h3>
+        <h3>Goal</h3>
         <p>Stop the hantus before they overrun the <b>Temporary Operations Command</b> at the end of the road! Each leaked creature costs lives. Lose all lives and the neighbourhood falls.</p>
-        <h3>🏗 Building</h3>
+        <h3>Building</h3>
         <p>Tap a <b>concrete pad</b> beside the road to build a tower. Tap a tower to <b>upgrade</b>, <b>sell</b> or move its <b>rally point</b> (NS Camp only). At max level every tower offers a choice of <b>two ★ ultimate upgrades</b> — pick the one that fits your defense!</p>
-        <h3>⏩ Waves</h3>
-        <p>Press <b>NEXT WAVE</b> early to earn bonus gold. Use the ⏸ / ⏩ buttons to pause or fast-forward.</p>
-        <h3>🏆 Challenges</h3>
-        <p>Beat a level with ★★★ to unlock its <b>🔥 Heroic</b> and <b>🛡 Iron</b> Challenges — elite waves or one long siege, one life only, each worth a bonus ★.</p>
-        <h3>🦸 Heroes</h3>
+        <h3>Waves</h3>
+        <p>Press <b>NEXT WAVE</b> early to earn bonus gold. Use the pause and speed buttons to pause or fast-forward.</p>
+        <h3>Challenges</h3>
+        <p>Beat a level with ★★★ to unlock its <b>Heroic</b> and <b>Iron</b> Challenges — elite waves or one long siege, one life only, each worth a bonus ★.</p>
+        <h3>Heroes</h3>
         <p>Your hero fights beside your towers — <b>tap the hero, then tap the ground</b> to move them. Acts 1–2 field one hero; Acts 3–4 field two. Fallen heroes respawn after a short wait.</p>
-        <h3>🎖 Merits</h3>
+        <h3>Merits</h3>
         <p>Clearing levels and challenges earns <b>merit points</b>. Spend them in the <b>Armory</b> to unlock new towers and legendary heroes, and choose your hero loadout there.</p>
-        <h3>💾 Saving</h3>
+        <h3>Saving</h3>
         <p>Progress autosaves in the browser. Use <b>EXPORT SAVE</b> on the menu to download a backup .json, and <b>LOAD SAVE</b> to restore it.</p>
       </div>
       <div>
-        <h3>🗼 Towers</h3>
-        <p><b>📡 Cell-Base Tower</b> — rapid 5G microwave zaps. Hits ground &amp; flying. (physical)</p>
-        <p><b>🍈 Durian Launcher</b> — lobs the king of fruits. Splash damage, ground only.</p>
-        <p><b>⛩ Talisman Temple</b> — enchanted talismans pierce armour, slow spirits. (magic)</p>
-        <p><b>🎖 NS Camp</b> — deploys NSmen who block enemies on the road.</p>
-        <p><b>🎯 Mata Sniper Post</b> — slow, long-range shots that ignore armour.</p>
-        <p><b>🔥 Hawker Wok</b> — flaming splash that keeps burning. Ground only.</p>
-        <p><b>⚡ Substation Coil</b> — magic lightning that chains between spirits.</p>
-        <p><b>🍧 Ice Kacang Cart</b> — freezing pulse chills every spirit in range.</p>
-        <h3>👹 Know your enemy</h3>
+        <h3>Towers</h3>
+        <p><b>Cell-Base Tower</b> — rapid 5G microwave zaps. Hits ground &amp; flying. (physical)</p>
+        <p><b>Durian Launcher</b> — lobs the king of fruits. Splash damage, ground only.</p>
+        <p><b>Talisman Temple</b> — enchanted talismans pierce armour, slow spirits. (magic)</p>
+        <p><b>NS Camp</b> — deploys NSmen who block enemies on the road.</p>
+        <p><b>Mata Sniper Post</b> — slow, long-range shots that ignore armour.</p>
+        <p><b>Hawker Wok</b> — flaming splash that keeps burning. Ground only.</p>
+        <p><b>Substation Coil</b> — magic lightning that chains between spirits.</p>
+        <p><b>Ice Kacang Cart</b> — freezing pulse chills every spirit in range.</p>
+        <h3>Know your enemy</h3>
         <p><b>Armoured</b> spirits resist physical hits — use the Temple. <b>Spectral</b> ones resist magic — use durians &amp; 5G. <b>Flying</b> hantus ignore roads and soldiers.</p>
       </div>
     </div>
@@ -89,8 +89,8 @@
 <div id="screen-armory" class="screen">
   <div class="levels-header">
     <button class="small-btn" id="btn-armory-back">MENU</button>
-    <h2>🎖 Armory</h2>
-    <div id="armory-merits" class="total-stars">🎖 0 merits</div>
+    <h2>Armory</h2>
+    <div id="armory-merits" class="total-stars">0 merits</div>
   </div>
   <div id="armory-grid" class="armory-grid"></div>
 </div>
@@ -103,9 +103,9 @@
     <!-- HUD -->
     <div id="hud">
       <div class="hud-left">
-        <span class="hud-item" id="hud-lives">❤️ 20</span>
-        <span class="hud-item" id="hud-gold">🪙 220</span>
-        <span class="hud-item" id="hud-wave">🌊 0/8</span>
+        <span class="hud-item"><img class="hud-pix" data-spr="ui_heart" alt="Lives"><span id="hud-lives">20</span></span>
+        <span class="hud-item"><img class="hud-pix" data-spr="ui_coin" alt="Gold"><span id="hud-gold">220</span></span>
+        <span class="hud-item"><img class="hud-pix" data-spr="ui_wave" alt="Wave"><span id="hud-wave">0/8</span></span>
       </div>
       <div class="hud-right">
         <button class="hud-btn" id="btn-mute" title="Sound"></button>

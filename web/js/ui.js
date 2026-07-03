@@ -36,6 +36,11 @@ const UI = {
       b.prepend(img);
     }
 
+    // pixel-art HUD stat icons (declared via data-spr in the HTML)
+    document.querySelectorAll('img.hud-pix[data-spr]').forEach(img => {
+      img.src = Sprites.url(img.dataset.spr);
+    });
+
     // menu
     $('btn-play').onclick = () => { Sound.ensure(); this.show('levels'); this.renderLevels(); };
     $('btn-armory').onclick = () => { Sound.ensure(); this.show('armory'); this.renderArmory(); };
@@ -113,7 +118,7 @@ const UI = {
     reader.onload = () => {
       try {
         Progress.importJSON(reader.result);
-        alert(`Save loaded! ★ ${Progress.totalStars()} stars · 🎖 ${Progress.merits()} merits restored.`);
+        alert(`Save loaded! ${Progress.totalStars()} stars · ${Progress.merits()} merits restored.`);
         if ($('screen-levels').classList.contains('active')) this.renderLevels();
         if ($('screen-armory').classList.contains('active')) this.renderArmory();
       } catch (e) {
@@ -127,7 +132,7 @@ const UI = {
   /* ---------- armory (spend merits on towers & heroes) ---------- */
 
   renderArmory() {
-    $('armory-merits').textContent = `🎖 ${Progress.merits()} merits`;
+    $('armory-merits').textContent = `${Progress.merits()} merits`;
     const grid = $('armory-grid');
     grid.innerHTML = '';
 
@@ -138,7 +143,7 @@ const UI = {
       grid.appendChild(h);
     };
 
-    head('🗼 TOWERS');
+    head('TOWERS');
     for (const key of Object.keys(TOWER_TYPES)) {
       const def = TOWER_TYPES[key];
       const cost = TOWER_MERIT_COST[key];
@@ -149,17 +154,17 @@ const UI = {
       card.innerHTML = `
         <img class="ac-ico" src="${Sprites.url(sprite)}" alt="">
         <div class="ac-body">
-          <div class="ac-name">${def.emoji} ${def.name}</div>
+          <div class="ac-name">${def.name}</div>
           <div class="ac-desc">${def.desc}</div>
         </div>
-        <div class="ac-cost">${owned ? '✓ OWNED' : `🎖 ${cost}`}</div>`;
+        <div class="ac-cost">${owned ? '✓ OWNED' : `${cost} merits`}</div>`;
       if (!owned) card.onclick = () => {
         if (Progress.unlockTower(key)) { Sound.build(); this.renderArmory(); }
       };
       grid.appendChild(card);
     }
 
-    head(`🦸 HEROES — equip ${'◆'} (1 hero in Acts 1–2, 2 in Acts 3–4)`);
+    head('HEROES — equip ◆ (1 hero in Acts 1–2, 2 in Acts 3–4)');
     for (const key of HERO_ORDER) {
       const def = HERO_TYPES[key];
       const owned = Progress.heroUnlocked(key);
@@ -168,15 +173,15 @@ const UI = {
       card.className = 'armory-card' +
         (owned ? (equipped ? ' owned equipped' : ' owned') :
           Progress.merits() >= def.cost ? ' buyable' : ' locked');
-      const kindTag = def.kind === 'melee' ? '⚔ melee' : '🏹 ranged';
+      const kindTag = def.kind === 'melee' ? 'melee' : 'ranged';
       card.innerHTML = `
         <img class="ac-ico" src="${Sprites.url(def.sprite)}" alt="">
         <div class="ac-body">
-          <div class="ac-name">${def.emoji} ${def.name} <span class="ac-kind">${kindTag}</span></div>
+          <div class="ac-name">${def.name} <span class="ac-kind">${kindTag}</span></div>
           <div class="ac-desc">${def.blurb}</div>
-          <div class="ac-stats">❤ ${def.hp} · ⚔ ${def.damage}${def.range ? ' · ◎ ' + def.range : ''}</div>
+          <div class="ac-stats">HP ${def.hp} · DMG ${def.damage}${def.range ? ' · RNG ' + def.range : ''}</div>
         </div>
-        <div class="ac-cost">${owned ? (equipped ? '◆ EQUIPPED' : 'tap to equip') : def.cost === 0 ? 'FREE' : `🎖 ${def.cost}`}</div>`;
+        <div class="ac-cost">${owned ? (equipped ? '◆ EQUIPPED' : 'tap to equip') : def.cost === 0 ? 'FREE' : `${def.cost} merits`}</div>`;
       card.onclick = () => {
         if (owned) { Progress.toggleLoadout(key); Sound.coin(); }
         else if (Progress.unlockHero(key)) Sound.build();
@@ -189,7 +194,7 @@ const UI = {
   /* ---------- level select ---------- */
 
   renderLevels() {
-    $('total-stars').textContent = `★ ${Progress.totalStars()} / ${Progress.maxStars()} · 🎖 ${Progress.merits()}`;
+    $('total-stars').textContent = `★ ${Progress.totalStars()} / ${Progress.maxStars()} · ${Progress.merits()} merits`;
     const grid = $('level-grid');
     grid.innerHTML = '';
     LEVELS.forEach((lv, i) => {
@@ -206,14 +211,14 @@ const UI = {
       const card = document.createElement('div');
       card.className = 'level-card' + (unlocked ? '' : ' locked');
       const badges = chal
-        ? `<span class="lv-badge ${Progress.heroicDone(i) ? 'done' : ''}" title="Heroic Challenge">🔥</span>` +
-          `<span class="lv-badge ${Progress.ironDone(i) ? 'done' : ''}" title="Iron Challenge">🛡</span>`
+        ? `<img class="lv-badge ${Progress.heroicDone(i) ? 'done' : ''}" title="Heroic Challenge" src="${Sprites.url('ui_flame')}" alt="Heroic">` +
+          `<img class="lv-badge ${Progress.ironDone(i) ? 'done' : ''}" title="Iron Challenge" src="${Sprites.url('ui_shield')}" alt="Iron">`
         : '';
       card.innerHTML = `
         <div class="lv-num">LEVEL ${i + 1}</div>
-        <div class="lv-name">${unlocked ? lv.name : '🔒 ' + lv.name}</div>
+        <div class="lv-name">${unlocked ? lv.name : 'LOCKED · ' + lv.name}</div>
         <div class="lv-stars">${'★'.repeat(stars)}<span style="color:#d8cdb0">${'★'.repeat(3 - stars)}</span>${badges}</div>
-        <div class="lv-diff diff-${lv.diff}">${lv.diff.toUpperCase()} <span title="${TIMES_OF_DAY[lv.tod || 'day'].name}">${TIMES_OF_DAY[lv.tod || 'day'].icon}</span></div>`;
+        <div class="lv-diff diff-${lv.diff}">${lv.diff.toUpperCase()} <span class="lv-tod">${TIMES_OF_DAY[lv.tod || 'day'].name.toUpperCase()}</span></div>`;
       if (unlocked) card.onclick = () => chal ? this.showModePicker(i) : this.startLevel(i, 'campaign');
       grid.appendChild(card);
     });
@@ -234,7 +239,7 @@ const UI = {
         : '';
       return `
         <button class="mode-btn mode-${key}" data-mode="${key}">
-          <span class="mode-ico">${m.icon}</span>
+          <img class="mode-ico" src="${Sprites.url(m.sprite)}" alt="">
           <span class="mode-body">
             <span class="mode-name">${m.name}</span>
             <span class="mode-desc">${m.desc}</span>${extra}
@@ -247,7 +252,7 @@ const UI = {
         <h2>${lv.name}</h2>
         <p class="mode-sub">Choose your challenge</p>
         ${rows}
-        <button class="big-btn secondary" id="btn-mode-cancel">← BACK</button>
+        <button class="big-btn secondary" id="btn-mode-cancel">BACK</button>
       </div>`;
     wrap.classList.remove('hidden');
     wrap.querySelectorAll('.mode-btn').forEach(b => {
@@ -269,7 +274,7 @@ const UI = {
     const mtag = mode === 'campaign' ? '' : ` · ${MODES[mode].name}`;
     this.banner(`${LEVELS[i].name}${mtag}`);
     if (mode === 'iron') {
-      setTimeout(() => this.banner(`🛡 Only: ${Game.allowedTowers.map(t => TOWER_TYPES[t].name).join(' + ')}`), 2400);
+      setTimeout(() => this.banner(`Only: ${Game.allowedTowers.map(t => TOWER_TYPES[t].name).join(' + ')}`), 2400);
     }
   },
 
@@ -374,7 +379,7 @@ const UI = {
       const cost = def.levels[t.level + 1].cost;
       const b = document.createElement('button');
       b.className = 'p-btn' + (Game.gold < cost ? ' disabled' : '');
-      b.innerHTML = `<span class="ico">⬆️</span><span class="nm">${def.levels[t.level + 1].label}</span><span class="cost">🪙 ${cost}</span>`;
+      b.innerHTML = `<img class="ico" src="${Sprites.url('ui_up')}" alt=""><span class="nm">${def.levels[t.level + 1].label}</span><span class="cost">${cost}g</span>`;
       b.onclick = ev => { ev.stopPropagation(); if (Game.upgrade(t)) this.showTowerMenu(t); };
       el.appendChild(b);
     } else if (t.level === def.levels.length - 1 && def.ults) {
@@ -383,14 +388,14 @@ const UI = {
         const b = document.createElement('button');
         b.className = 'p-btn ult' + (Game.gold < u.cost ? ' disabled' : '');
         b.title = u.blurb;
-        b.innerHTML = `<img class="ico" src="${Sprites.url(u.sprite)}" alt=""><span class="nm">★ ${u.label}</span><span class="cost">🪙 ${u.cost}</span>`;
+        b.innerHTML = `<img class="ico" src="${Sprites.url(u.sprite)}" alt=""><span class="nm">★ ${u.label}</span><span class="cost">${u.cost}g</span>`;
         b.onclick = ev => { ev.stopPropagation(); if (Game.chooseUlt(t, i)) this.showTowerMenu(t); };
         el.appendChild(b);
       });
     } else {
       const b = document.createElement('button');
       b.className = 'p-btn disabled';
-      b.innerHTML = `<span class="ico">🏆</span><span class="nm">${towerStats(t).label}</span><span class="cost">ULTIMATE</span>`;
+      b.innerHTML = `<img class="ico" src="${Sprites.url('ui_medal')}" alt=""><span class="nm">${towerStats(t).label}</span><span class="cost">ULTIMATE</span>`;
       el.appendChild(b);
     }
 
@@ -398,7 +403,7 @@ const UI = {
     if (def.barracks) {
       const b = document.createElement('button');
       b.className = 'p-btn';
-      b.innerHTML = `<span class="ico">🚩</span><span class="nm">RALLY POINT</span><span class="cost">tap road</span>`;
+      b.innerHTML = `<img class="ico" src="${Sprites.url('ui_flag')}" alt=""><span class="nm">RALLY POINT</span><span class="cost">tap road</span>`;
       b.onclick = ev => { ev.stopPropagation(); Game.rallyPickTower = t; this.hidePopups(); };
       el.appendChild(b);
     }
@@ -407,7 +412,7 @@ const UI = {
     const refund = Math.round(towerTotalValue(t.type, t.level, t.ult) * 0.6);
     const s = document.createElement('button');
     s.className = 'p-btn sell';
-    s.innerHTML = `<span class="ico">💰</span><span class="nm">SELL</span><span class="cost">+${refund}</span>`;
+    s.innerHTML = `<img class="ico" src="${Sprites.url('ui_coin')}" alt=""><span class="nm">SELL</span><span class="cost">+${refund}</span>`;
     s.onclick = ev => { ev.stopPropagation(); Game.sell(t); Game.selected = null; this.hidePopups(); };
     el.appendChild(s);
 
@@ -438,8 +443,8 @@ const UI = {
     const lv = LEVELS[Game.levelIndex];
     const mode = Game.mode;
     $('end-title').textContent = won
-      ? (mode === 'campaign' ? '🎉 Victory!' : `${MODES[mode].icon} Challenge Complete!`)
-      : '💀 Defeat';
+      ? (mode === 'campaign' ? 'Victory!' : `${MODES[mode].name} Complete!`)
+      : 'Defeat';
     if (mode === 'campaign') {
       $('end-stars').innerHTML = won
         ? '★'.repeat(stars) + `<span class="off">${'★'.repeat(3 - stars)}</span>`
@@ -450,12 +455,12 @@ const UI = {
     let msg;
     if (won && mode === 'campaign') {
       msg = `${lv.name} is safe! ${Game.lives}/${Game.maxLives} lives kept.`;
-      if (Game.meritsEarned) msg += ` +${Game.meritsEarned} 🎖 merits!`;
+      if (Game.meritsEarned) msg += ` +${Game.meritsEarned} merits!`;
       if (stars >= 3 && !Progress.heroicDone(Game.levelIndex) && !Progress.ironDone(Game.levelIndex))
         msg += ' Heroic & Iron Challenges unlocked!';
     } else if (won) {
       msg = `${MODES[mode].name} conquered — bonus star earned!`;
-      if (Game.meritsEarned) msg += ` +${Game.meritsEarned} 🎖 merits!`;
+      if (Game.meritsEarned) msg += ` +${Game.meritsEarned} merits!`;
     } else {
       msg = mode === 'campaign'
         ? `The hantus overran ${lv.name}. Try a new strategy, can one!`
@@ -468,9 +473,9 @@ const UI = {
   },
 
   refreshHud() {
-    $('hud-lives').textContent = `❤️ ${Game.lives}`;
-    $('hud-gold').textContent = `🪙 ${Math.floor(Game.gold)}`;
-    $('hud-wave').textContent = `🌊 ${Math.max(0, Game.waveIndex + 1)}/${Game.waves.length}`;
+    $('hud-lives').textContent = `${Game.lives}`;
+    $('hud-gold').textContent = `${Math.floor(Game.gold)}`;
+    $('hud-wave').textContent = `${Math.max(0, Game.waveIndex + 1)}/${Game.waves.length}`;
     const btn = $('btn-next-wave');
     btn.disabled = !Game.canCallWave() && Game.waveIndex >= 0;
     if (Game.waveIndex < 0) {
