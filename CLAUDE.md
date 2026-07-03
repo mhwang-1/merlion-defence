@@ -10,7 +10,7 @@ global (`'use strict'` per file, no modules).
 ```bash
 cd web && python3 -m http.server 8080     # dev server (or: docker compose up)
 node test/sim.js                          # balance sim, campaign mode (~1 min)
-node test/sim.js --all-modes              # + heroic & iron (~5 min) — run before shipping balance changes
+node test/sim.js --all-modes              # + heroic & iron (~5 min)
 ```
 
 `test/sim.js` loads the game headless in a `vm` context with stubbed
@@ -156,8 +156,7 @@ produces identical waves. In `levels.js`:
 - Build pads are capped at `MAX_PADS = 12` (`trimSpots` in levels.js evenly
   samples the baked geo spots, which are stored in path order).
 - Challenge starting gold bonus: iron +220, heroic +120 (in `Game.start`).
-These numbers were tuned against sim.js — if you touch them, re-run
-`--all-modes` and re-tune until green.
+These numbers were tuned against sim.js.
 
 ## Gotchas
 

@@ -86,7 +86,7 @@ const ACTS = [
    AGAIN (easy≈old hard, normal above that, hard/heroic well beyond)
    after the game was still reported too easy — validated against a
    stronger sim AI that also micro-manages heroes like real players.  */
-const DIFF_SCALE = { easy: 1.60, normal: 1.74, hard: 1.95, heroic: 2.12 };
+const DIFF_SCALE = { easy: 1.70, normal: 1.85, hard: 2.00, heroic: 2.12 };
 
 /* ===== Game modes (Kingdom Rush style) =====
    campaign — the story mode; earn up to ★★★.
