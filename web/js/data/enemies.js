@@ -11,26 +11,26 @@ const ENEMY_TYPES = {
   // --- fodder ---
   toyol: {
     name: 'Toyol', emoji: '👶', origin: 'Malay',
-    hp: 122, speed: 78, armor: 0, resist: 0, bounty: 6, lives: 1,
+    hp: 70, speed: 78, armor: 0, resist: 0, bounty: 6, lives: 1,
     size: 13, color: '#8bc34a',
     desc: 'Mischievous child spirit that steals from the living.',
   },
   pocong: {
     name: 'Pocong', emoji: '🧟', origin: 'Indonesian/Malay',
-    hp: 160, speed: 46, armor: 0.1, resist: 0, bounty: 9, lives: 1,
+    hp: 110, speed: 46, armor: 0.1, resist: 0, bounty: 9, lives: 1,
     size: 15, color: '#e0e0e0',
     desc: 'A hopping shrouded ghost, bound in its burial cloth.',
   },
   pontianak: {
     name: 'Pontianak', emoji: '👻', origin: 'Malay',
-    hp: 150, speed: 95, armor: 0, resist: 0.35, bounty: 12, lives: 1,
+    hp: 100, speed: 95, armor: 0, resist: 0.35, bounty: 12, lives: 1,
     size: 15, color: '#f8bbd0',
     desc: 'Vengeful female spirit announced by the scent of frangipani.',
   },
   // --- flying ---
   manananggal: {
     name: 'Manananggal', emoji: '🦇', origin: 'Filipino',
-    hp: 140, speed: 85, armor: 0, resist: 0.2, bounty: 14, lives: 1,
+    hp: 90, speed: 85, armor: 0, resist: 0.2, bounty: 14, lives: 1,
     size: 15, color: '#ce93d8', flying: true,
     desc: 'Self-severing viscera-flyer of Philippine legend.',
   },
@@ -75,7 +75,7 @@ const ENEMY_TYPES = {
   // --- swarm ---
   kuntilanakSwarm: {
     name: 'Orang Minyak', emoji: '🛢', origin: 'Malay',
-    hp: 135, speed: 120, armor: 0.15, resist: 0.15, bounty: 8, lives: 1,
+    hp: 85, speed: 120, armor: 0.15, resist: 0.15, bounty: 8, lives: 1,
     size: 13, color: '#4e342e',
     desc: 'Slippery oily man — hard to catch, quick on his feet.',
   },
