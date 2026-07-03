@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merlion Defense — Singapore Tower Defense</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦁</text></svg>">
+</head>
+<body>
+
+<!-- ============ MAIN MENU ============ -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-box">
+    <div class="title-merlion">🦁</div>
+    <h1>MERLION<br>DEFENSE</h1>
+    <p class="tagline">Hawkers, HDBs &amp; Hantus — defend the Lion City from the spirits of Asian legend</p>
+    <button class="big-btn" id="btn-play">▶ &nbsp;PLAY</button>
+    <button class="big-btn secondary" id="btn-help">📖 &nbsp;HOW TO PLAY</button>
+    <button class="big-btn secondary" id="btn-reset">🗑 &nbsp;RESET PROGRESS</button>
+    <p class="credits">30 levels · 4 towers · 14 folklore creatures</p>
+  </div>
+</div>
+
+<!-- ============ HELP ============ -->
+<div id="screen-help" class="screen">
+  <div class="help-box">
+    <h2>How to Play</h2>
+    <div class="help-cols">
+      <div>
+        <h3>🎯 Goal</h3>
+        <p>Stop the hantus before they reach the MRT exit! Each leaked creature costs lives. Lose all lives and the neighbourhood falls.</p>
+        <h3>🏗 Building</h3>
+        <p>Tap a <b>concrete pad</b> beside the road to build a tower. Tap a tower to <b>upgrade</b>, <b>sell</b> or move its <b>rally point</b> (NS Camp only).</p>
+        <h3>⏩ Waves</h3>
+        <p>Press <b>NEXT WAVE</b> early to earn bonus gold. Use the ⏸ / ⏩ buttons to pause or fast-forward.</p>
+      </div>
+      <div>
+        <h3>🗼 Towers</h3>
+        <p><b>📡 Cell-Base Tower</b> — rapid 5G microwave zaps. Hits ground &amp; flying. (physical)</p>
+        <p><b>🍈 Durian Launcher</b> — lobs the king of fruits. Splash damage, ground only.</p>
+        <p><b>⛩ Talisman Temple</b> — enchanted talismans pierce armour, slow spirits. (magic)</p>
+        <p><b>🎖 NS Camp</b> — deploys NSmen who block enemies on the road.</p>
+        <h3>👹 Know your enemy</h3>
+        <p><b>Armoured</b> spirits resist physical hits — use the Temple. <b>Spectral</b> ones resist magic — use durians &amp; 5G. <b>Flying</b> hantus ignore roads and soldiers.</p>
+      </div>
+    </div>
+    <button class="big-btn" id="btn-help-back">← BACK</button>
+  </div>
+</div>
+
+<!-- ============ LEVEL SELECT ============ -->
+<div id="screen-levels" class="screen">
+  <div class="levels-header">
+    <button class="small-btn" id="btn-levels-back">← MENU</button>
+    <h2>Choose a Neighbourhood</h2>
+    <div id="total-stars" class="total-stars">★ 0 / 90</div>
+  </div>
+  <div id="level-grid" class="level-grid"></div>
+</div>
+
+<!-- ============ GAME ============ -->
+<div id="screen-game" class="screen">
+  <div id="game-wrap">
+    <canvas id="game-canvas" width="960" height="600"></canvas>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div class="hud-left">
+        <span class="hud-item" id="hud-lives">❤️ 20</span>
+        <span class="hud-item" id="hud-gold">🪙 220</span>
+        <span class="hud-item" id="hud-wave">🌊 0/8</span>
+      </div>
+      <div class="hud-right">
+        <button class="hud-btn" id="btn-mute" title="Sound">🔊</button>
+        <button class="hud-btn" id="btn-speed" title="Speed">1×</button>
+        <button class="hud-btn" id="btn-pause" title="Pause">⏸</button>
+        <button class="hud-btn" id="btn-quit" title="Quit">🏠</button>
+      </div>
+    </div>
+
+    <button id="btn-next-wave">⚔ NEXT WAVE <span id="next-wave-timer"></span></button>
+
+    <!-- Build menu popup -->
+    <div id="build-menu" class="popup hidden"></div>
+    <!-- Tower menu popup -->
+    <div id="tower-menu" class="popup hidden"></div>
+
+    <!-- Banners -->
+    <div id="banner" class="hidden"></div>
+
+    <!-- End-of-level overlay -->
+    <div id="end-overlay" class="hidden">
+      <div class="end-box">
+        <h2 id="end-title">Victory!</h2>
+        <div id="end-stars" class="end-stars"></div>
+        <p id="end-msg"></p>
+        <div class="end-btns">
+          <button class="big-btn" id="btn-end-next">NEXT LEVEL ▶</button>
+          <button class="big-btn secondary" id="btn-end-retry">↻ RETRY</button>
+          <button class="big-btn secondary" id="btn-end-map">🗺 MAP</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause overlay -->
+    <div id="pause-overlay" class="hidden">
+      <div class="end-box">
+        <h2>Paused</h2>
+        <div class="end-btns">
+          <button class="big-btn" id="btn-resume">▶ RESUME</button>
+          <button class="big-btn secondary" id="btn-pause-retry">↻ RESTART</button>
+          <button class="big-btn secondary" id="btn-pause-map">🗺 MAP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/data/enemies.js"></script>
+<script src="js/data/towers.js"></script>
+<script src="js/data/levels.js"></script>
+<script src="js/render.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

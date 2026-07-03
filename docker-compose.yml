@@ -1,0 +1,7 @@
+services:
+  merlion-defense:
+    build: .
+    container_name: merlion-defense
+    ports:
+      - "8080:80"
+    restart: unless-stopped
