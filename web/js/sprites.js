@@ -510,6 +510,571 @@ Sprites.def('t_ice', { o: '#122030', w: '#eef6fa', c: '#b8e4f2', b: '#4aa8d8', d
   "...oo....oo...",
 ]);
 
+/* ---- upgraded tower art: each level looks visibly different ---- */
+
+// Cell L2 — 5G Tower: taller lattice mast, twin panel antennas
+Sprites.def('t_cell_2', { o: '#20262c', s: '#9aa8b4', d: '#5f6e7a', r: '#e04040', w: '#e8f2f8', b: '#39485c', c: '#7ec8e8' }, [
+  "......oro.....",
+  "......owo.....",
+  ".oo...oso..oo.",
+  ".oco..oso.oco.",
+  ".oo.oossoo.oo.",
+  "....osssso....",
+  ".....osso.....",
+  "....os.oso....",
+  "....oso.so....",
+  "....osssso....",
+  "...odssssdo...",
+  "...obbbbbbo...",
+  "..obbwbbwbbo..",
+  "..obbbbbbbbo..",
+]);
+
+// Cell L3 — 6G Array: triple dish crown, beacon lights
+Sprites.def('t_cell_3', { o: '#20262c', s: '#9aa8b4', d: '#5f6e7a', r: '#e04040', w: '#e8f2f8', b: '#39485c', c: '#7ec8e8', y: '#ffd23c' }, [
+  "..r...oro...r.",
+  ".owo..owo..owo",
+  ".oso..oso..oso",
+  "..oo..oso..oo.",
+  "..occoossoocco",
+  "...oossssoo...",
+  "....osssso....",
+  ".....osso.....",
+  "....os.oso....",
+  "....osssso....",
+  "...odsyysdo...",
+  "...obbbbbbo...",
+  "..obbwbwbbbo..",
+  ".obbbbbbbbbbo.",
+]);
+
+// Cell ULT A — Satellite Uplink: huge dish tracking the sky
+Sprites.def('t_cell_ua', { o: '#1a2026', s: '#9aa8b4', d: '#5f6e7a', w: '#eef6fa', b: '#39485c', c: '#7ec8e8', y: '#ffd23c', r: '#e04040' }, [
+  "...owwwwwwo...",
+  "..owccccccwo..",
+  ".owccccccccwo.",
+  ".owcccsscccwo.",
+  "..owccssccwo..",
+  "...owwsswwo...",
+  "....oossoo....",
+  ".....osso.....",
+  "....osssso....",
+  "....osryso....",
+  "...odssssdo...",
+  "...obbyybbo...",
+  "..obbbbbbbbo..",
+  ".obbbbbbbbbbo.",
+]);
+
+// Cell ULT B — Overdrive Array: crackling twin masts, hot coils
+Sprites.def('t_cell_ub', { o: '#20262c', s: '#9aa8b4', d: '#5f6e7a', w: '#e8f2f8', b: '#39485c', c: '#7ee8ff', y: '#ffd23c', r: '#ff5a3c' }, [
+  ".c..oro.oro..c",
+  "..c.owo.owo.c.",
+  "..cooso.osooc.",
+  "...coso.osoc..",
+  "..oossooosso..",
+  "...osssssso...",
+  "....osrrso....",
+  "....osrrso....",
+  "....osssso....",
+  "...oysssyso...",
+  "...odssssdo...",
+  "...obybbybo...",
+  "..obbbbbbbbo..",
+  "..obbbbbbbbo..",
+]);
+
+// Durian L2 — D24 Catapult: timber frame, twin fruit rack
+Sprites.def('t_durian_2', { o: '#231407', w: '#8a5a2a', d: '#5f3a16', g: '#7aa02c', k: '#4c7018', y: '#c8b060' }, [
+  "...oggo.oggo..",
+  "..ogkggogkgo..",
+  "..oggggoggggo.",
+  "...oggo.oggo..",
+  "....oyy.yyo...",
+  "...owwwwwwo...",
+  "..owwddddwwo..",
+  "..owdwwwwdwo..",
+  "..owwddddwwo..",
+  ".owwwwwwwwwwo.",
+  ".odddddddddo..",
+  ".owwwwwwwwwwo.",
+  "oddddddddddddo",
+]);
+
+// Durian L3 — Mao Shan Wang: reinforced tower, golden crown fruit
+Sprites.def('t_durian_3', { o: '#231407', w: '#8a5a2a', d: '#5f3a16', g: '#7aa02c', k: '#4c7018', y: '#ffd23c', e: '#e8b13a' }, [
+  ".....oyyo.....",
+  "...ogkggkgo...",
+  "..oggggggggo..",
+  "..ogkgggggko..",
+  "...ogggggo....",
+  "..oggo.oggo...",
+  "...oeyyyyeo...",
+  "...owwwwwwo...",
+  "..owddwwddwo..",
+  "..owwwddwwwo..",
+  ".owwwwwwwwwwo.",
+  ".oddddddddddo.",
+  ".owwwwwwwwwwo.",
+  "oddddddddddddo",
+]);
+
+// Durian ULT A — King of Fruits: colossal crowned durian on a throne
+Sprites.def('t_durian_ua', { o: '#231407', w: '#8a5a2a', d: '#5f3a16', g: '#7aa02c', k: '#4c7018', y: '#ffd23c', r: '#c53030' }, [
+  "....y.yy.y....",
+  "....oyyyyo....",
+  "...ogkggkgo...",
+  "..oggggggggo..",
+  ".ogkgggggkggo.",
+  ".oggggkgggggo.",
+  ".ogkgggggkggo.",
+  "..ogggggggo...",
+  "...orrrrro....",
+  "..owwwwwwwwo..",
+  "..owddddddwo..",
+  ".owwwwwwwwwwo.",
+  ".oddddddddddo.",
+  "oddddddddddddo",
+]);
+
+// Durian ULT B — Thorn Barrage: triple-barrel fruit battery
+Sprites.def('t_durian_ub', { o: '#231407', w: '#8a5a2a', d: '#5f3a16', g: '#7aa02c', k: '#4c7018', y: '#c8b060', s: '#9aa8b4' }, [
+  "..oggo.go.ggo.",
+  ".ogkgogkgogkgo",
+  ".oggggggggggo.",
+  "..ogo.ogo.ogo.",
+  "..oso.oso.oso.",
+  "..osssssssso..",
+  "...oyyyyyyo...",
+  "...owwwwwwo...",
+  "..owwddddwwo..",
+  "..owdwwwwdwo..",
+  ".owwwwwwwwwwo.",
+  ".oddddddddddo.",
+  "oddddddddddddo",
+]);
+
+// Temple L2 — Temple Hall: two-tier roof, guardian lions
+Sprites.def('t_temple_2', { o: '#2a0c08', r: '#c53030', d: '#8e1f1f', y: '#e8b13a', w: '#f6e8c8', k: '#3c1410' }, [
+  "......yy......",
+  ".....oyyo.....",
+  "..oyyyyyyyyo..",
+  "...odrrrrdo...",
+  ".oyyyyyyyyyyo.",
+  "..odrrrrrrdo..",
+  "...orwwwwro...",
+  "...orwkkwro...",
+  "...orwwwwro...",
+  "..y.orrrro.y..",
+  ".oyoorrrrooyo.",
+  "..odrrrrrrdo..",
+  ".oyyyyyyyyyyo.",
+]);
+
+// Temple L3 — Grand Pagoda: three-tier pagoda, gold finial
+Sprites.def('t_temple_3', { o: '#2a0c08', r: '#c53030', d: '#8e1f1f', y: '#ffd23c', w: '#f6e8c8', k: '#3c1410' }, [
+  "......yy......",
+  ".....oyyo.....",
+  "....orrrro....",
+  "..oyyyyyyyyo..",
+  "...orrrrrro...",
+  ".oyyyyyyyyyyo.",
+  "..odrrrrrrdo..",
+  "...orwwwwro...",
+  "...orwkkwro...",
+  "...orwwwwro...",
+  "..oyyyyyyyyo..",
+  "..odrrrrrrdo..",
+  ".oyyyyyyyyyyo.",
+]);
+
+// Temple ULT A — Nine Emperor Court: imperial hall, dragon gold roof
+Sprites.def('t_temple_ua', { o: '#2a0c08', r: '#c53030', d: '#8e1f1f', y: '#ffd23c', w: '#f6e8c8', k: '#3c1410', c: '#7ee8ff' }, [
+  "..y...cc...y..",
+  ".oyo.occo.oyo.",
+  "..oyyyyyyyyo..",
+  ".oyyyyyyyyyyo.",
+  "..orrrrrrrro..",
+  ".oyyyyyyyyyyo.",
+  "..odrrrrrrdo..",
+  "..orwwwwwwro..",
+  "..orwkyykwro..",
+  "..orwwwwwwro..",
+  "..oyyyyyyyyo..",
+  ".odrrrrrrrrdo.",
+  "oyyyyyyyyyyyyo",
+]);
+
+// Temple ULT B — Lion Dance Troupe: lion head crest, drums
+Sprites.def('t_temple_ub', { o: '#2a0c08', r: '#c53030', d: '#8e1f1f', y: '#ffd23c', w: '#f6e8c8', k: '#3c1410', g: '#2e7a4a' }, [
+  "..oyo....oyo..",
+  "..orrrrrrrro..",
+  ".orwwrrrrwwro.",
+  ".orkwrrrrwkro.",
+  ".orrrryyrrrro.",
+  "..orrwwwwrro..",
+  "...owwkkwwo...",
+  "..ogggggggo...",
+  ".oggyggggygo..",
+  ".orro.oo.orro.",
+  ".orwo.oo.orwo.",
+  ".orro....orro.",
+  ".oyyo....oyyo.",
+]);
+
+// Camp L2 — NSF Camp: bigger tent, sandbag ring, twin flags
+Sprites.def('t_camp_2', { o: '#12250e', g: '#4c7a34', d: '#35592a', r: '#c53030', b: '#b09a60', n: '#8a784a' }, [
+  "..orr....orr..",
+  "..orrr...orrr.",
+  "..o......o....",
+  "..o..ogo.o....",
+  "....ogggo.....",
+  "...ogggggo....",
+  "..ogggggggo...",
+  ".ogggdddgggo..",
+  "ogggggdddggggo",
+  "oggo..ooo.oggo",
+  "obbbbbbbbbbbo.",
+  "obnbbnbbnbbno.",
+  ".oo.......oo..",
+]);
+
+// Camp L3 — Commando Base: watchtower + fortified tent
+Sprites.def('t_camp_3', { o: '#12250e', g: '#4c7a34', d: '#35592a', r: '#c53030', b: '#b09a60', n: '#8a784a', k: '#20180c', s: '#9aa8b4' }, [
+  "orr...........",
+  "orrr..........",
+  "o.okkkko......",
+  "o.okssko......",
+  "o.okkkko.ogo..",
+  "o..oo...ogggo.",
+  "o..oo..ogggggo",
+  "o..oo.ogggdggo",
+  "o..oooggggdggo",
+  "o..oogggggggo.",
+  "obbbbbbbbbbbbo",
+  "obnbbnbbnbbnbo",
+  ".oo........oo.",
+]);
+
+// Camp ULT A — Guards Elite: red beret HQ, armoured barricades
+Sprites.def('t_camp_ua', { o: '#12250e', g: '#4c7a34', d: '#35592a', r: '#c53030', b: '#b09a60', n: '#8a784a', k: '#20180c', y: '#ffd23c' }, [
+  "..orr....orr..",
+  "..orrrr..orrrr",
+  "..o......o....",
+  "...oyyyyyo....",
+  "...orrrrro....",
+  "..orrrrrrro...",
+  ".orrrdddrrro..",
+  "orrrrgdddrrrro",
+  "orro..ooo.orro",
+  "okkkkkkkkkkkko",
+  "okbbkkbbkkbbko",
+  "obbbbbbbbbbbbo",
+  ".oo........oo.",
+]);
+
+// Camp ULT B — Combat Medics: field hospital, red cross tent
+Sprites.def('t_camp_ub', { o: '#12250e', g: '#4c7a34', d: '#35592a', r: '#c53030', w: '#f0e8d0', b: '#b09a60', n: '#8a784a' }, [
+  "......oro.....",
+  "......oro.....",
+  ".....ogggo....",
+  "....ogggggo...",
+  "...ogggggggo..",
+  "..ogggwwwgggo.",
+  ".ogggwwrwwgggo",
+  "oggggwrrrwgggo",
+  "oggggwwrwwggo.",
+  "oggo.owwwo.ogo",
+  "obbbbbbbbbbbo.",
+  "obnbbnbbnbbno.",
+  ".oo.......oo..",
+]);
+
+// Mata L2 — Marksman Nest: armoured cabin, longer barrel
+Sprites.def('t_mata_2', { o: '#0c141c', b: '#2a4a6a', d: '#1c3348', s: '#9aa8b4', w: '#e8f2f8', r: '#d32f2f', k: '#101a24' }, [
+  "...osssssso...",
+  "..ossssssssro.",
+  "..obwkkwkwbo..",
+  "..obbbbbbbbo..",
+  "...odbbbbdo...",
+  "....obbbbo....",
+  "...os.oo.so...",
+  "...os.oo.so...",
+  "...os.oo.so...",
+  "....odbbdo....",
+  "..obbbbbbbbo..",
+  "..odbbbbbbdo..",
+  ".obbbbbbbbbbo.",
+  ".okkkkkkkkkko.",
+]);
+
+// Mata L3 — STAR Overwatch: twin-deck tower, scope glint
+Sprites.def('t_mata_3', { o: '#0c141c', b: '#2a4a6a', d: '#1c3348', s: '#9aa8b4', w: '#e8f2f8', r: '#d32f2f', k: '#101a24', c: '#7ee8ff' }, [
+  "..osssssssro..",
+  "..obwkkcwkbo..",
+  "..obbbbbbbbo..",
+  "...osssssso...",
+  "...obwkkwbo...",
+  "...obbbbbbo...",
+  "....odbbdo....",
+  "...os.oo.so...",
+  "...os.oo.so...",
+  "....odbbdo....",
+  "..obbbbbbbbo..",
+  "..odbbbbbbdo..",
+  ".obbbbbbbbbbo.",
+  ".okkkkkkkkkko.",
+]);
+
+// Mata ULT A — Anti-Materiel Post: massive cannon barrel
+Sprites.def('t_mata_ua', { o: '#0c141c', b: '#2a4a6a', d: '#1c3348', s: '#9aa8b4', w: '#e8f2f8', r: '#d32f2f', k: '#101a24', y: '#ffd23c' }, [
+  "........osso..",
+  ".......ossso..",
+  "......osso....",
+  "..oossssoo....",
+  ".osssssssro...",
+  ".obwkkwkwbo...",
+  ".obbbybbbbo...",
+  "..odbbbbdo....",
+  "...os.oo.so...",
+  "...os.oo.so...",
+  "....odbbdo....",
+  "..obbbbbbbbo..",
+  ".obbbbbbbbbbo.",
+  ".okkkkkkkkkko.",
+]);
+
+// Mata ULT B — Twin Marksmen: two cabins back to back
+Sprites.def('t_mata_ub', { o: '#0c141c', b: '#2a4a6a', d: '#1c3348', s: '#9aa8b4', w: '#e8f2f8', r: '#d32f2f', k: '#101a24' }, [
+  ".rosso..ossor.",
+  ".ossso..osssso",
+  ".obwkboobkwbo.",
+  ".obbbbbbbbbbo.",
+  "..obbbbbbbbo..",
+  "...odbbbbdo...",
+  "....obbbbo....",
+  "...os.oo.so...",
+  "...os.oo.so...",
+  "....odbbdo....",
+  "..obbbbbbbbo..",
+  "..odbbbbbbdo..",
+  ".obbbbbbbbbbo.",
+  ".okkkkkkkkkko.",
+]);
+
+// Wok L2 — Wok Hei Master: double burner, taller flame
+Sprites.def('t_wok_2', { o: '#241006', r: '#c53030', d: '#8e1f1f', w: '#f6e8c8', y: '#ffd23c', f: '#ff7b2e', k: '#3c2214', b: '#5f3a16' }, [
+  "...offo.offo..",
+  "...ofyfoofyfo.",
+  "...offo.offo..",
+  "...okkkokkko..",
+  "..okkkkkkkkko.",
+  ".orrrrrrrrrro.",
+  "orwrwrwrwrwro.",
+  "..obbbbbbbbo..",
+  "..obwwwwwwbo..",
+  "..obwyyyywbo..",
+  "..obwwwwwwbo..",
+  "..obbbbbbbbo..",
+  ".obb......bbo.",
+]);
+
+// Wok L3 — Michelin Hawker: star plaque, roaring twin flames
+Sprites.def('t_wok_3', { o: '#241006', r: '#c53030', d: '#8e1f1f', w: '#f6e8c8', y: '#ffd23c', f: '#ff7b2e', k: '#3c2214', b: '#5f3a16', e: '#e8b13a' }, [
+  "..offo..offo..",
+  ".ofyffoofyffo.",
+  "..offfooofffo.",
+  "...okkkkkko...",
+  "..okkkkkkkko..",
+  ".orrrrrrrrrro.",
+  "orwrwrwrwrwro.",
+  ".oeyeobbobeyeo",
+  "..obbwwwwbbo..",
+  "..obwyyyywbo..",
+  "..obwwwwwwbo..",
+  "..obbbbbbbbo..",
+  ".obb......bbo.",
+]);
+
+// Wok ULT A — Dragon Breath Wok: dragon-head burner
+Sprites.def('t_wok_ua', { o: '#241006', r: '#c53030', d: '#8e1f1f', w: '#f6e8c8', y: '#ffd23c', f: '#ff7b2e', k: '#3c2214', b: '#5f3a16', g: '#2e7a4a' }, [
+  ".f..offfo..f..",
+  "..fofyyyfof...",
+  "..offyyyffo...",
+  "...offfffo....",
+  "..oggggggggo..",
+  ".oggyggggygo..",
+  ".ogggkkkkggo..",
+  ".orrrrrrrrrro.",
+  "orwrwrwrwrwro.",
+  "..obbwwwwbbo..",
+  "..obwyffywbo..",
+  "..obwwwwwwbo..",
+  "..obbbbbbbbo..",
+  ".obb......bbo.",
+]);
+
+// Wok ULT B — Chilli Crab Cauldron: bubbling red cauldron, crab claws
+Sprites.def('t_wok_ub', { o: '#241006', r: '#e03030', d: '#8e1f1f', w: '#f6e8c8', y: '#ffd23c', f: '#ff7b2e', k: '#3c2214', b: '#5f3a16' }, [
+  ".oro..y..oro..",
+  "orrro.f.orrro.",
+  "orro..f..orro.",
+  "..o.offfo.o...",
+  "..orrrrrrro...",
+  ".orryrryrrro..",
+  ".orrrrrrrrro..",
+  "..okkkkkkko...",
+  "..obbbbbbbbo..",
+  "..obwwwwwwbo..",
+  "..obwyyyywbo..",
+  "..obwwwwwwbo..",
+  "..obbbbbbbbo..",
+  ".obb......bbo.",
+]);
+
+// Power L2 — Grid Coil: taller coil stack, twin arcs
+Sprites.def('t_power_2', { o: '#0e161e', s: '#9aa8b4', d: '#5f6e7a', c: '#7ee8ff', y: '#ffd23c', k: '#26303a', b: '#39485c' }, [
+  ".c...cc...c...",
+  "..c.occo.c....",
+  "...occcco.....",
+  "...osccso.....",
+  "....osso......",
+  "...odssdo.....",
+  "....osso......",
+  "...odssdo.....",
+  "....osso......",
+  "...odssdo.....",
+  "...osssso.....",
+  "..obbybybo....",
+  "..obbbbbbo....",
+  ".okkkkkkkko...",
+]);
+
+// Power L3 — Tesla Array: twin coils, big spark crown
+Sprites.def('t_power_3', { o: '#0e161e', s: '#9aa8b4', d: '#5f6e7a', c: '#7ee8ff', y: '#ffd23c', k: '#26303a', b: '#39485c', w: '#e0f7ff' }, [
+  "c..cc..cc..c..",
+  ".coccoocco.c..",
+  "..occwwcco....",
+  "..osccccso....",
+  "...oss.sso....",
+  "..odsdodsdo...",
+  "...oss.sso....",
+  "..odsdodsdo...",
+  "...ossssso....",
+  "...odssssdo...",
+  "..obbyybybo...",
+  "..obbbbbbbo...",
+  ".okkkkkkkkko..",
+]);
+
+// Power ULT A — Monsoon Storm: storm-cloud crown, forked bolts
+Sprites.def('t_power_ua', { o: '#0e161e', s: '#9aa8b4', d: '#5f6e7a', c: '#7ee8ff', y: '#ffd23c', k: '#26303a', b: '#39485c', g: '#5a6a7a', w: '#e0f7ff' }, [
+  "..oggggggggo..",
+  ".oggggggggggo.",
+  ".oggwggggwggo.",
+  "..oggggggggo..",
+  "..c..cc..c....",
+  "...c.cc.c.....",
+  "...occcco.....",
+  "...osccso.....",
+  "....osso......",
+  "...odssdo.....",
+  "....osso......",
+  "...osssso.....",
+  "..obybbybo....",
+  ".okkkkkkkko...",
+]);
+
+// Power ULT B — Megawatt Coil: massive single coil, warning stripes
+Sprites.def('t_power_ub', { o: '#0e161e', s: '#9aa8b4', d: '#5f6e7a', c: '#7ee8ff', y: '#ffd23c', k: '#26303a', b: '#39485c', r: '#e04040', w: '#e0f7ff' }, [
+  "....owwwwo....",
+  "...occcccco...",
+  "..occwccwcco..",
+  "..osccccccso..",
+  "...ossssso....",
+  "...odsssdo....",
+  "...ossssso....",
+  "...odsssdo....",
+  "...ossssso....",
+  "..oyskkksyo...",
+  "..obybrbybo...",
+  "..obbbbbbbo...",
+  ".okkkkkkkkko..",
+  ".okrkrkrkrko..",
+]);
+
+// Ice L2 — Snow Ice Stand: bigger mound, parasol
+Sprites.def('t_ice_2', { o: '#122030', w: '#eef6fa', c: '#b8e4f2', b: '#4aa8d8', d: '#2e7bb4', p: '#f48fb1', g: '#7cc47c', k: '#1c3040', r: '#e05050' }, [
+  "......oo......",
+  "...orrwwrro...",
+  "..orwwrrwwro..",
+  ".......o......",
+  "....owwwwo....",
+  "...owcwwcwo...",
+  "...opwgwpwo...",
+  "..occcccccco..",
+  "..obbbbbbbbo..",
+  ".obwbwbwbwbbo.",
+  ".obbbbbbbbbbo.",
+  ".obwbwbwbwbbo.",
+  "..okk....okk..",
+  "..oo......oo..",
+]);
+
+// Ice L3 — Blizzard Bing: frost aura, icicle crown
+Sprites.def('t_ice_3', { o: '#122030', w: '#eef6fa', c: '#b8e4f2', b: '#4aa8d8', d: '#2e7bb4', p: '#f48fb1', g: '#7cc47c', k: '#1c3040' }, [
+  "..w...ww...w..",
+  "..oc..cc..co..",
+  "...owwwwwwo...",
+  "..owwcwwcwwo..",
+  "..owcwwwwcwo..",
+  "..opwgwwgpwo..",
+  "..owwcwwcwwo..",
+  ".occcccccccco.",
+  "..obbbbbbbbo..",
+  ".obwbwbwbwbbo.",
+  ".obbbbbbbbbbo.",
+  ".obwbwbwbwbbo.",
+  "..okk....okk..",
+  "..oo......oo..",
+]);
+
+// Ice ULT A — Absolute Zero: crystal spire cart
+Sprites.def('t_ice_ua', { o: '#122030', w: '#eef6fa', c: '#b8e4f2', b: '#4aa8d8', d: '#2e7bb4', k: '#1c3040', v: '#d8f4ff' }, [
+  "......vv......",
+  ".....ovvo.....",
+  ".....ovcvo....",
+  "....ovccvo....",
+  "....ovccvvo...",
+  "...ovccvcvvo..",
+  "...ovcvvccvo..",
+  "..ovvcccvcvvo.",
+  "..occcccccco..",
+  "..obbbbbbbbo..",
+  ".obwbwbwbwbbo.",
+  ".obbbbbbbbbbo.",
+  "..okk....okk..",
+  "..oo......oo..",
+]);
+
+// Ice ULT B — Hailstorm Bing: storm funnel, hail hopper
+Sprites.def('t_ice_ub', { o: '#122030', w: '#eef6fa', c: '#b8e4f2', b: '#4aa8d8', d: '#2e7bb4', k: '#1c3040', s: '#9aa8b4', v: '#d8f4ff' }, [
+  ".w..w.ww.w..w.",
+  "..v..vvvv..v..",
+  "..osssssssso..",
+  "...osvvvvso...",
+  "....osvvso....",
+  "...owwwwwwo...",
+  "..owcwwwwcwo..",
+  "..owwcwwcwwo..",
+  ".occcccccccco.",
+  "..obbbbbbbbo..",
+  ".obwbwbwbwbbo.",
+  ".obbbbbbbbbbo.",
+  "..okk....okk..",
+  "..oo......oo..",
+]);
+
 Sprites.def('t_camp', { o: '#12250e', g: '#4c7a34', d: '#35592a', r: '#c53030' }, [
   ".......orr....",
   ".......orrr...",
@@ -764,6 +1329,69 @@ Sprites.def('bush', { o: '#12300f', g: '#4c9a3c', l: '#66b850' }, [
   "ogggglgo",
   "oglggggo",
   ".oooooo.",
+]);
+
+/* Rain tree — the umbrella-canopy roadside icon of Singapore */
+Sprites.def('rain_tree', { o: '#10260e', g: '#4c9a3c', d: '#357a28', l: '#68bc50', t: '#6e4a20' }, [
+  "..oooooooo..",
+  ".oglgggglgo.",
+  "ogggldggglgo",
+  "oglgggdlgggo",
+  ".ogdlggggdo.",
+  "..oo.ot.oo..",
+  ".....oto....",
+  ".....oto....",
+  "....ootoo...",
+]);
+
+/* HDB void-deck playground — red tower + yellow slide + blue swing */
+Sprites.def('playground', { o: '#26180c', r: '#d94f3d', d: '#a83828', y: '#f2b632', w: '#fdf3dd', b: '#3f7dbf' }, [
+  "..orro......",
+  ".orrrro.....",
+  "..oddo..bbb.",
+  "..owwoy.b.b.",
+  "..owwoyyob.b",
+  "..oddo.yyorb",
+  "..o..o..yyo.",
+  "..o..o...yyo",
+  ".oo..oo...oo",
+]);
+
+/* Bus stop — the orange-roofed heartland shelter */
+Sprites.def('bus_stop', { o: '#2a1a0c', r: '#e8862a', d: '#b05f18', s: '#9aa8b4', w: '#f6e8c8', k: '#26180c', g: '#4aa8d8' }, [
+  "orrrrrrrrrro",
+  "odddddddddo.",
+  ".os......so.",
+  ".os.wggw.so.",
+  ".os.wggw.so.",
+  ".os......so.",
+  ".oskkkkkkso.",
+  ".os......so.",
+  ".oo......oo.",
+]);
+
+/* Street lamp — warm sodium light on a grey post */
+Sprites.def('lamp_post', { o: '#1c2228', s: '#7a848c', y: '#ffd23c', w: '#fff2c0' }, [
+  ".oyyo",
+  "oywwyo",
+  ".oyyo.",
+  "..oso.",
+  "..oso.",
+  "..oso.",
+  "..oso.",
+  "..oso.",
+  ".ooso.",
+]);
+
+/* Park bench under a small planter */
+Sprites.def('bench', { o: '#241408', w: '#a06a34', d: '#7a4e22', g: '#4c9a3c' }, [
+  ".g......g.",
+  "ogo....ogo",
+  "owwwwwwwwo",
+  "odwwwwwwdo",
+  "owwwwwwwwo",
+  ".od....do.",
+  ".oo....oo.",
 ]);
 
 Sprites.def('rock', { o: '#2c3238', s: '#8a929c', d: '#5f6870' }, [

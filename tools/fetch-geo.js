@@ -106,7 +106,9 @@ const SPECS = [
     seaSeed: [1.38550, 103.95200],
   },
   { // 8 Tampines Hub — ring roads wrap Our Tampines Hub
-    name: 'Tampines Hub', c: [1.35310, 103.94020], h: 0.0080,
+    // maxZoom 1: the two lanes approach from opposite corners — zooming
+    // spreads them so far apart the split defense becomes unwinnable
+    name: 'Tampines Hub', c: [1.35310, 103.94020], h: 0.0080, maxZoom: 1,
     paths: [
       { from: [1.35670, 103.93720], to: [1.35330, 103.94050] },
       { from: [1.34950, 103.94380], to: [1.35330, 103.94050] },
@@ -232,7 +234,8 @@ const SPECS = [
     ],
   },
   { // 27 Marina Barrage — the dam between reservoir and open sea
-    name: 'Marina Barrage', c: [1.28050, 103.87050], h: 0.0080,
+    // maxZoom capped: at ×1.75 the dam road grows too long to defend in heroic
+    name: 'Marina Barrage', c: [1.28050, 103.87050], h: 0.0080, maxZoom: 1.4,
     paths: [{ from: [1.27760, 103.86590], to: [1.28230, 103.87200] }],
     landmarks: [{ at: [1.28030, 103.87090], kind: 'building', label: 'Marina Barrage', match: /Marina Barrage/i }],
     seaSeed: [1.27650, 103.87500],
@@ -401,9 +404,11 @@ async function fetchLevel(i, spec) {
   relation["natural"="water"]${B};
   relation["waterway"="riverbank"]${B};
   way["natural"="coastline"]${B};
-  way["leisure"~"^(park|garden|nature_reserve|pitch|golf_course)$"]${B};
-  way["landuse"~"^(forest|grass|recreation_ground|meadow)$"]${B};
-  way["natural"~"^(wood|scrub)$"]${B};
+  way["leisure"~"^(park|garden|nature_reserve|pitch|golf_course|playground|swimming_pool|sports_centre|track|dog_park)$"]${B};
+  node["leisure"="playground"]${B};
+  way["amenity"="parking"]${B};
+  way["landuse"~"^(forest|grass|recreation_ground|meadow|village_green|cemetery)$"]${B};
+  way["natural"~"^(wood|scrub|beach|sand)$"]${B};
   way["building"]${B};
 );
 out geom qt;`;
@@ -542,20 +547,33 @@ function processLevel(i, spec, osm) {
   const waterRels = els.filter(e => e.type === 'relation' && e.tags &&
     (e.tags.natural === 'water' || e.tags.waterway === 'riverbank') && e.members);
   const greenWays = els.filter(e => e.type === 'way' && e.tags && e.geometry && (
-    ['park', 'garden', 'nature_reserve', 'pitch', 'golf_course'].includes(e.tags.leisure) ||
-    ['forest', 'grass', 'recreation_ground', 'meadow'].includes(e.tags.landuse) ||
+    ['park', 'garden', 'nature_reserve', 'golf_course', 'dog_park'].includes(e.tags.leisure) ||
+    ['forest', 'grass', 'recreation_ground', 'meadow', 'village_green', 'cemetery'].includes(e.tags.landuse) ||
     ['wood', 'scrub'].includes(e.tags.natural)));
+  const pitchWays = els.filter(e => e.type === 'way' && e.tags && e.geometry &&
+    ['pitch', 'track', 'sports_centre'].includes(e.tags.leisure));
+  const poolWays = els.filter(e => e.type === 'way' && e.tags && e.geometry && e.tags.leisure === 'swimming_pool');
+  const playWays = els.filter(e => e.type === 'way' && e.tags && e.geometry && e.tags.leisure === 'playground');
+  const playNodes = els.filter(e => e.type === 'node' && e.tags && e.tags.leisure === 'playground');
+  const lotWays = els.filter(e => e.type === 'way' && e.tags && e.geometry &&
+    e.tags.amenity === 'parking' && !e.tags.building &&
+    e.tags.parking !== 'underground' && e.tags.parking !== 'multi-storey');
+  const sandWays = els.filter(e => e.type === 'way' && e.tags && e.geometry &&
+    ['beach', 'sand'].includes(e.tags.natural));
   const buildings = els.filter(e => e.type === 'way' && e.tags && e.tags.building && e.geometry);
 
   const toPoly = way => simplify(way.geometry.map(g => proj([g.lat, g.lon])), 2).map(p => [q(p[0]), q(p[1])]);
   const toLine = (way, tol) => simplify(way.geometry.map(g => proj([g.lat, g.lon])), tol).map(p => [q(p[0]), q(p[1])]);
+  // with auto-zoom the bbox can extend past the canvas — drop invisible geometry
+  const MARGIN = 50;
+  const onCanvas = pts => pts.some(([x, y]) => x > -MARGIN && x < W + MARGIN && y > -MARGIN && y < H + MARGIN);
 
   // --- roads (context rendering) ---
   const roads = [];
   for (const way of roadWays) {
     const cls = ROAD_CLASS[way.tags.highway];
     const line = toLine(way, cls >= 3 ? 2 : 1.5);
-    if (line.length < 2) continue;
+    if (line.length < 2 || !onCanvas(line)) continue;
     // skip tiny service scraps
     let len = 0;
     for (let j = 1; j < line.length; j++) len += Math.hypot(line[j][0] - line[j - 1][0], line[j][1] - line[j - 1][1]);
@@ -568,7 +586,7 @@ function processLevel(i, spec, osm) {
   for (const way of railWays) {
     if (way.tags.tunnel) continue;              // underground MRT: nothing to see
     const line = toLine(way, 2);
-    if (line.length >= 2) rail.push(line);
+    if (line.length >= 2 && onCanvas(line)) rail.push(line);
   }
   const railChains = chainLines(rail);
 
@@ -576,13 +594,13 @@ function processLevel(i, spec, osm) {
   const water = [];
   for (const way of waterWays) {
     const poly = toPoly(way);
-    if (poly.length > 3 && polyArea(poly) > 350) water.push(poly);
+    if (poly.length > 3 && polyArea(poly) > 350 && onCanvas(poly)) water.push(poly);
   }
   for (const rel of waterRels) {
     const outers = rel.members.filter(m => m.type === 'way' && m.role !== 'inner' && m.geometry);
     for (const ring of stitchRings(outers)) {
       const poly = simplify(ring.map(g => proj(g)), 2).map(p => [q(p[0]), q(p[1])]);
-      if (poly.length > 3 && polyArea(poly) > 350) water.push(poly);
+      if (poly.length > 3 && polyArea(poly) > 350 && onCanvas(poly)) water.push(poly);
     }
   }
 
@@ -594,19 +612,59 @@ function processLevel(i, spec, osm) {
   const parks = [];
   for (const way of greenWays) {
     const poly = toPoly(way);
-    if (poly.length > 3 && polyArea(poly) > 900) parks.push(poly);
+    if (poly.length > 3 && polyArea(poly) > 900 && onCanvas(poly)) parks.push(poly);
   }
   parks.sort((a, b) => polyArea(b) - polyArea(a));
   parks.length = Math.min(parks.length, 40);
+
+  // --- recreation micro-features: pitches, pools, playgrounds, carparks, beaches ---
+  const pitches = [];
+  for (const way of pitchWays) {
+    const poly = toPoly(way);
+    if (poly.length > 3 && polyArea(poly) > 130 && onCanvas(poly)) pitches.push({ p: poly, s: (way.tags.sport || '').split(';')[0] });
+  }
+  pitches.sort((a, b) => polyArea(b.p) - polyArea(a.p));
+  pitches.length = Math.min(pitches.length, 40);
+  const pools = [];
+  for (const way of poolWays) {
+    const poly = toPoly(way);
+    if (poly.length > 3 && polyArea(poly) > 70 && onCanvas(poly)) pools.push(poly);
+  }
+  pools.length = Math.min(pools.length, 40);
+  const lots = [];
+  for (const way of lotWays) {
+    const poly = toPoly(way);
+    if (poly.length > 3 && polyArea(poly) > 380 && onCanvas(poly)) lots.push(poly);
+  }
+  lots.sort((a, b) => polyArea(b) - polyArea(a));
+  lots.length = Math.min(lots.length, 30);
+  const sand = [];
+  for (const way of sandWays) {
+    const poly = toPoly(way);
+    if (poly.length > 3 && polyArea(poly) > 420 && onCanvas(poly)) sand.push(poly);
+  }
+  const plays = [];
+  const addPlay = (x, y) => {
+    if (x < 10 || y < 10 || x > W - 10 || y > H - 10) return;
+    if (plays.some(p => Math.hypot(p[0] - x, p[1] - y) < 36)) return;
+    plays.push([q(x), q(y)]);
+  };
+  for (const way of playWays) {
+    const pts = way.geometry.map(g2 => proj([g2.lat, g2.lon]));
+    if (pts.length > 2) { const [cx, cy] = centroid(pts); addPlay(cx, cy); }
+  }
+  for (const n of playNodes) { const [x, y] = proj([n.lat, n.lon]); addPlay(x, y); }
+  plays.length = Math.min(plays.length, 14);
 
   // --- buildings: keep the biggest + all landmark matches ---
   const bl = [];
   for (const way of buildings) {
     const poly = toPoly(way);
-    if (poly.length < 4) continue;
+    if (poly.length < 4 || !onCanvas(poly)) continue;
     const area = polyArea(poly);
     const name = way.tags.name || '';
-    bl.push({ poly, area, name, levels: parseInt(way.tags['building:levels']) || 0, tag: way.tags.building });
+    const levels = parseInt(way.tags['building:levels']) || 0;
+    bl.push({ poly, area, name, levels, tag: way.tags.building, kind: roofKind(way.tags, area, levels) });
   }
   bl.sort((a, b) => b.area - a.area);
   const kept = [];
@@ -635,11 +693,43 @@ function processLevel(i, spec, osm) {
     water,
     sea,
     parks,
-    buildings: kept.map(b => ({ p: b.poly, n: b.lm ? b.name : undefined, h: b.levels, lm: b.lm ? 1 : 0 })),
+    pitches,
+    pools,
+    lots,
+    sand,
+    plays,
+    buildings: kept.map(b => ({ p: b.poly, n: b.lm ? b.name : undefined, h: b.levels, lm: b.lm ? 1 : 0, k: b.kind })),
     landmarks,
   };
   g.spots = generateSpots(g);
   return g;
+}
+
+/* Rooftop style class, derived from OSM building tags — lets the renderer
+   draw satellite-plausible pixel-art roofs (tiled landed houses, HDB slab
+   roofs with water tanks, mall HVAC farms, carpark decks, …).
+   0 generic flat · 1 tiled pitched · 2 HDB slab · 3 industrial ribbed ·
+   4 commercial flat · 5 carpark deck · 6 place of worship · 7 school ·
+   8 open canopy                                                            */
+function roofKind(tags, area, levels) {
+  const t = tags.building;
+  const rs = tags['roof:shape'] || '';
+  if (['gabled', 'hipped', 'pyramidal', 'gambrel'].includes(rs)) return 1;
+  if (['house', 'detached', 'semidetached_house', 'terrace', 'bungalow',
+       'shophouse', 'hut', 'shed'].includes(t)) return 1;
+  if (['residential', 'apartments', 'dormitory'].includes(t)) return 2;
+  if (['industrial', 'warehouse', 'hangar', 'garage', 'service',
+       'greenhouse'].includes(t)) return 3;
+  if (['retail', 'commercial', 'office', 'hotel', 'mix_used'].includes(t)) return 4;
+  if (t === 'parking' || t === 'carport') return 5;
+  if (['temple', 'church', 'chapel', 'mosque', 'shrine'].includes(t)) return 6;
+  if (['school', 'kindergarten', 'university', 'college', 'education'].includes(t)) return 7;
+  if (t === 'roof') return 8;
+  // 'yes' & friends: guess from scale — tall = HDB-ish, small = landed house
+  if (levels >= 10) return 2;
+  if (area < 700 && levels <= 3) return 1;   // small footprint ≈ tiled landed house
+  if (area > 2600 && levels <= 4) return 4;  // big low block ≈ mall/podium
+  return 0;
 }
 
 /* ------------------------------------------------- build pad placement --
@@ -687,6 +777,10 @@ function generateSpots(g) {
       if (x > sx - 14 && x < sx + sw + 14 && y > sy - 14 && y < sy + sh + 14) return false;
     for (const w of g.water)
       if (pointInPoly(w, x, y) || distToLine(w.concat([w[0]]), x, y) < 16) return false;
+    for (const w of (g.pools || []))
+      if (pointInPoly(w, x, y)) return false;
+    for (const pl of (g.plays || []))
+      if (Math.hypot(x - pl[0], y - pl[1]) < 26) return false;
     for (const b of g.buildings)
       if (pointInPoly(b.p, x, y) || distToLine(b.p.concat([b.p[0]]), x, y) < R.bld) return false;
     for (const lm of g.landmarks)
@@ -740,6 +834,46 @@ function generateSpots(g) {
     }
   }
   return spots.slice(0, 18);
+}
+
+/* ---------------------------------------------------------- auto-zoom --
+   Some neighbourhoods route a path that only crosses part of the canvas
+   (e.g. Ang Mo Kio Central). Rather than showing lots of map irrelevant to
+   play, zoom the projection into the path's bounding box (plus margin) and
+   re-process. The zoomed bbox always stays INSIDE the original spec bbox,
+   so cached Overpass responses remain valid.                              */
+const ZOOM_MAX = 1.5, ZOOM_MIN = 1.12, ZOOM_MARGIN = 80;
+const ZOOM_ENTRY_SKIP = 90;   // px of the entry run-in allowed offscreen
+function autoZoomSpec(spec, g) {
+  let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+  for (const p of g.paths) {
+    // a short entry run-in may sit offscreen (enemies march in from outside)
+    let acc = 0;
+    for (let i = 0; i < p.length; i++) {
+      if (i > 0) acc += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]);
+      if (acc < ZOOM_ENTRY_SKIP && i < p.length - 1) continue;
+      const cx = clampN(p[i][0], 0, W), cy = clampN(p[i][1], 0, H);
+      x1 = Math.min(x1, cx); y1 = Math.min(y1, cy);
+      x2 = Math.max(x2, cx); y2 = Math.max(y2, cy);
+    }
+  }
+  // landmarks are part of the scene story — keep them in view too
+  for (const lm of g.landmarks) {
+    if (lm.x < -20 || lm.x > W + 20 || lm.y < -20 || lm.y > H + 20) continue;
+    x1 = Math.min(x1, lm.x); y1 = Math.min(y1, lm.y);
+    x2 = Math.max(x2, lm.x); y2 = Math.max(y2, lm.y);
+  }
+  const bw = (x2 - x1) + ZOOM_MARGIN * 2, bh = (y2 - y1) + ZOOM_MARGIN * 2;
+  const zoom = Math.min(W / bw, H / bh, spec.maxZoom ?? ZOOM_MAX);
+  if (!(zoom >= ZOOM_MIN)) return null;
+  // new centre in original-projection px, clamped inside the old bbox
+  const hw = W / zoom / 2, hh = H / zoom / 2;
+  const cx = clampN((x1 + x2) / 2, hw, W - hw);
+  const cy = clampN((y1 + y2) / 2, hh, H - hh);
+  const bb = bboxOf(spec);
+  const lat = bb.n - cy / H * (bb.n - bb.s);
+  const lon = bb.w + cx / W * (bb.e - bb.w);
+  return { ...spec, c: [lat, lon], h: spec.h / zoom, _zoom: zoom };
 }
 
 /* Rasterize coastline walls on an 8px grid, flood fill from the sea seed,
@@ -860,6 +994,10 @@ function previewSVG(i, spec, g) {
   let s = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600">`;
   s += `<rect width="960" height="600" fill="#6aa03c"/>`;
   for (const p of g.parks) s += poly(p, 'fill="#4c8a2c" opacity="0.7"');
+  for (const p of (g.sand || [])) s += poly(p, 'fill="#e8d8a8"');
+  for (const p of (g.lots || [])) s += poly(p, 'fill="#9aa0a8"');
+  for (const p of (g.pitches || [])) s += poly(p.p, 'fill="#3d8b46" stroke="#fff"');
+  for (const p of (g.pools || [])) s += poly(p, 'fill="#3ec6e8"');
   for (const w of g.water) s += poly(w, 'fill="#2e7bb4"');
   for (const r of g.sea) s += `<rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" fill="#2e7bb4"/>`;
   const widths = [13, 10, 8, 5, 3];
@@ -878,6 +1016,7 @@ function previewSVG(i, spec, g) {
     }
   }
   for (const sp of (g.spots || [])) s += `<rect x="${sp[0] - 11}" y="${sp[1] - 8}" width="22" height="16" fill="#b8c2cc" stroke="#333"/>`;
+  for (const pl of (g.plays || [])) s += `<circle cx="${pl[0]}" cy="${pl[1]}" r="6" fill="#e8862a" stroke="#333"/>`;
   for (const lm of g.landmarks) s += `<text x="${lm.x}" y="${lm.y}" font-size="13" fill="#fff" text-anchor="middle" stroke="#000" stroke-width="0.4">${lm.label}</text>`;
   s += `<text x="480" y="20" font-size="16" fill="#fff" text-anchor="middle">${i}: ${spec.name}</text></svg>`;
   fs.mkdirSync(PREVIEW, { recursive: true });
@@ -904,11 +1043,18 @@ function previewSVG(i, spec, g) {
     const spec = SPECS[i];
     try {
       const osm = await fetchLevel(i, spec);
-      const g = processLevel(i, spec, osm);
+      let g = processLevel(i, spec, osm);
+      let usedSpec = spec;
+      const zoomed = autoZoomSpec(spec, g);
+      if (zoomed) {
+        console.log(`  ↳ path covers a small area — zooming ×${zoomed._zoom.toFixed(2)}`);
+        usedSpec = zoomed;
+        g = processLevel(i, zoomed, osm);
+      }
       out[i] = g;
-      if (doPreview) previewSVG(i, spec, g);
+      if (doPreview) previewSVG(i, usedSpec, g);
       const size = JSON.stringify(g).length;
-      console.log(`  ✔ roads:${g.roads.length} rail:${g.rail.length} water:${g.water.length} parks:${g.parks.length} bldg:${g.buildings.length} paths:${g.paths.map(p => p.length).join('/')} (${(size / 1024).toFixed(1)}KB)`);
+      console.log(`  ✔ roads:${g.roads.length} rail:${g.rail.length} water:${g.water.length} parks:${g.parks.length} pitch:${g.pitches.length} pool:${g.pools.length} play:${g.plays.length} bldg:${g.buildings.length} paths:${g.paths.map(p => p.length).join('/')} (${(size / 1024).toFixed(1)}KB)`);
     } catch (e) {
       console.error(`  ✘ L${i} ${spec.name}: ${e.message}`);
     }

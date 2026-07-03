@@ -369,7 +369,7 @@ const UI = {
     const el = $('tower-menu');
     el.innerHTML = '';
 
-    // upgrade
+    // upgrade / ultimate choice / max
     if (t.level < def.levels.length - 1) {
       const cost = def.levels[t.level + 1].cost;
       const b = document.createElement('button');
@@ -377,10 +377,20 @@ const UI = {
       b.innerHTML = `<span class="ico">⬆️</span><span class="nm">${def.levels[t.level + 1].label}</span><span class="cost">🪙 ${cost}</span>`;
       b.onclick = ev => { ev.stopPropagation(); if (Game.upgrade(t)) this.showTowerMenu(t); };
       el.appendChild(b);
+    } else if (t.level === def.levels.length - 1 && def.ults) {
+      // Kingdom Rush-style: pick ONE of two ultimates
+      def.ults.forEach((u, i) => {
+        const b = document.createElement('button');
+        b.className = 'p-btn ult' + (Game.gold < u.cost ? ' disabled' : '');
+        b.title = u.blurb;
+        b.innerHTML = `<img class="ico" src="${Sprites.url(u.sprite)}" alt=""><span class="nm">★ ${u.label}</span><span class="cost">🪙 ${u.cost}</span>`;
+        b.onclick = ev => { ev.stopPropagation(); if (Game.chooseUlt(t, i)) this.showTowerMenu(t); };
+        el.appendChild(b);
+      });
     } else {
       const b = document.createElement('button');
       b.className = 'p-btn disabled';
-      b.innerHTML = `<span class="ico">🏆</span><span class="nm">MAX LEVEL</span><span class="cost">${def.levels[t.level].label}</span>`;
+      b.innerHTML = `<span class="ico">🏆</span><span class="nm">${towerStats(t).label}</span><span class="cost">ULTIMATE</span>`;
       el.appendChild(b);
     }
 
@@ -394,7 +404,7 @@ const UI = {
     }
 
     // sell
-    const refund = Math.round(towerTotalValue(t.type, t.level) * 0.6);
+    const refund = Math.round(towerTotalValue(t.type, t.level, t.ult) * 0.6);
     const s = document.createElement('button');
     s.className = 'p-btn sell';
     s.innerHTML = `<span class="ico">💰</span><span class="nm">SELL</span><span class="cost">+${refund}</span>`;

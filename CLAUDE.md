@@ -42,7 +42,9 @@ web/js/audio.js        WebAudio SFX (Sound.*)
 web/js/data/enemies.js ENEMY_TYPES (folklore creatures; armor=physical resist,
                        resist=magic resist, flying, boss, lives cost)
 web/js/data/towers.js  TOWER_TYPES (cell/durian/temple/camp + mata/wok/
-                       power/ice), 3 levels each; TOWER_SPRITE name map
+                       power/ice), 3 levels each + 2 ultimate paths (`ults`,
+                       KR-style pick-one at max level); TOWER_SPRITE name map,
+                       towerStats(t)/towerSpriteName(t)/towerTotalValue
 web/js/data/heroes.js  HERO_TYPES (10 local-legend heroes), heroSlots(li)
                        (1 hero acts 1-2, 2 heroes acts 3-4), HERO_RESPAWN
 web/js/data/geo.js     ★ AUTO-GENERATED — do not hand-edit (see Maps below)
@@ -74,7 +76,13 @@ real streets. MRT trains animate on real viaducts.
   centre lat/lon, bbox height `h` (degrees; width = h×1.6), path
   `from/via/to` endpoints (real coords), landmark anchors (`match` regex
   snaps to a named OSM building), `seaSeed` (enables coastline sea fill),
-  `allowMinor`/`footpaths` (let routing use service roads / park paths).
+  `allowMinor`/`footpaths` (let routing use service roads / park paths),
+  `maxZoom` (cap/disable auto-zoom — Tampines Hub needs 1, Marina
+  Barrage 1.4 for balance).
+- **Auto-zoom**: when the routed path only covers part of the canvas, the
+  baker re-projects into the path bbox + margin (×1.12…×1.75,
+  `autoZoomSpec`) so gameplay fills the screen. Zoom changes path lengths —
+  ALWAYS re-run sim after regenerating geo.
 - It queries Overpass (2 mirrors, 429s happen — just rerun; responses cached
   in `tools/cache/L<i>.json`, ~19MB, so re-runs are offline), routes paths
   via Dijkstra over the road graph (largest connected component only),
@@ -86,8 +94,11 @@ real streets. MRT trains animate on real viaducts.
   (convert to png) after changing SPECS: check path length (≥ ~450px),
   path plausibility, sea on the correct side, pad count ≥10.
 - GEO entry shape: `{ paths, roads:{c,p,b}, rail, water, sea:[x,y,w,h] rects,
-  parks, buildings:{p,n,h,lm}, landmarks, spots }`. Road class `c`: 0=motorway
-  … 4=service; widths in `render.js` `ROAD_W`.
+  parks, pitches:{p,s}, pools, lots, sand, plays:[x,y], buildings:{p,n,h,lm},
+  landmarks, spots }`. Road class `c`: 0=motorway … 4=service; widths in
+  `render.js` `ROAD_W`. pitches/pools/lots/sand/plays are real OSM leisure
+  micro-features (sports pitches with markings, condo pools, open carparks
+  with cars, beaches, HDB playgrounds) drawn by the renderer.
 - OSM coastline convention: land is LEFT of way direction → sea is where
   cross-product > 0 in canvas coords (y-down). Implemented in `rasterSea`.
 - Attribution: © OpenStreetMap contributors, ODbL — keep the header comment
@@ -140,7 +151,8 @@ produces identical waves. In `levels.js`:
 - Iron:     `(30 + li*1.9) * (0.85 + progress*0.9) * scale`, group delay
   10–16s apart, boss hpMul ×0.38 (restricted towers can't burst a boss)
 - `scale = DIFF_SCALE[diff] / (1 + (nPaths-1)*K)` — multi-entrance discount;
-  K=0.26 campaign, **0.45 for 1-life modes** (split defense hurts much more).
+  K=0.42 campaign (raised for the auto-zoomed longer lanes), **0.45 for
+  1-life modes** (split defense hurts much more).
 - Build pads are capped at `MAX_PADS = 12` (`trimSpots` in levels.js evenly
   samples the baked geo spots, which are stored in path order).
 - Challenge starting gold bonus: iron +220, heroic +120 (in `Game.start`).
@@ -166,3 +178,9 @@ These numbers were tuned against sim.js — if you touch them, re-run
 - `pi-session-*.html` in repo root is a session log artifact, not app code.
 - Sprites: `Sprites.def(name, palette, rows)` ASCII art; enemy render falls
   back to 'toyol' if a sprite name is missing.
+- Tower art is per-level: `t_cell` / `t_cell_2` / `t_cell_3` and ultimate
+  sprites `t_cell_ua` / `t_cell_ub` (same suffixes for all 8 types).
+  `towerSpriteName(t)` resolves it; ultimates get a golden aura + ★ pip.
+- Ultimates: `Game.chooseUlt(t, 0|1)` at max level; use `towerStats(t)` (NOT
+  `def.levels[t.level]`) everywhere — level 3 stats live in `def.ults[t.ult]`.
+  sim.js buys ultimates too (alternating by tower id).

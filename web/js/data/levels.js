@@ -155,8 +155,9 @@ function genWaves(li, mode = 'campaign') {
   const pool = enemyPool(li);
   const nPaths = LAYOUTS[lv.layout].paths.length;
   // multi-entrance maps split the defense — discount the wave budget
-  // (K raised with the pad cap: fewer towers make split lanes pricier)
-  const scale = DIFF_SCALE[lv.diff] / (1 + (nPaths - 1) * 0.26);
+  // (K raised with the pad cap AND the auto-zoomed maps: fewer towers
+  //  cover proportionally less of the longer, wider-split lanes)
+  const scale = DIFF_SCALE[lv.diff] / (1 + (nPaths - 1) * 0.42);
   const waves = [];
 
   for (let w = 0; w < lv.waves; w++) {

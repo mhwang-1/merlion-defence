@@ -156,7 +156,7 @@ const Game = {
     if (this.gold < cost || this.towerAtSpot(spotIdx)) return false;
     this.gold -= cost;
     const [x, y] = this.layout.spots[spotIdx];
-    const t = { id: ++this.idSeq, type, level: 0, spot: spotIdx, x, y, cool: 0, rally: null };
+    const t = { id: ++this.idSeq, type, level: 0, ult: 0, spot: spotIdx, x, y, cool: 0, rally: null };
     this.towers.push(t);
     if (def.barracks) this.setRally(t, this.nearestRoadPoint(x, y));
     Sound.build();
@@ -166,7 +166,7 @@ const Game = {
 
   upgrade(t) {
     const def = TOWER_TYPES[t.type];
-    if (t.level >= def.levels.length - 1) return false;
+    if (t.level >= def.levels.length - 1) return false; // level 3 is an ultimate choice
     const cost = def.levels[t.level + 1].cost;
     if (this.gold < cost) return false;
     this.gold -= cost;
@@ -177,8 +177,24 @@ const Game = {
     return true;
   },
 
+  /* Kingdom Rush-style ultimate: at max level pick ONE of two paths */
+  chooseUlt(t, idx) {
+    const def = TOWER_TYPES[t.type];
+    if (!def.ults || t.level !== def.levels.length - 1) return false;
+    const cost = def.ults[idx].cost;
+    if (this.gold < cost) return false;
+    this.gold -= cost;
+    t.level = 3;
+    t.ult = idx;
+    if (def.barracks) this.refreshSoldiers(t);
+    Sound.build();
+    this.poof(t.x, t.y - 24);
+    this.floatText(t.x, t.y - 34, def.ults[idx].label + '!', '#ffd54f');
+    return true;
+  },
+
   sell(t) {
-    const refund = Math.round(towerTotalValue(t.type, t.level) * 0.6);
+    const refund = Math.round(towerTotalValue(t.type, t.level, t.ult) * 0.6);
     this.gold += refund;
     this.towers = this.towers.filter(x => x !== t);
     this.soldiers = this.soldiers.filter(s => s.tower !== t);
@@ -199,8 +215,7 @@ const Game = {
   },
 
   setRally(t, pt) {
-    const def = TOWER_TYPES[t.type];
-    const r = def.levels[t.level].range;
+    const r = towerStats(t).range;
     // clamp rally within range
     const d = dist(t.x, t.y, pt.x, pt.y);
     if (d > r) { pt = { x: t.x + (pt.x - t.x) * r / d, y: t.y + (pt.y - t.y) * r / d }; }
@@ -209,7 +224,7 @@ const Game = {
   },
 
   refreshSoldiers(t) {
-    const lv = TOWER_TYPES[t.type].levels[t.level];
+    const lv = towerStats(t);
     this.soldiers = this.soldiers.filter(s => s.tower !== t);
     for (let i = 0; i < 3; i++) {
       const ang = (i / 3) * Math.PI * 2;
@@ -310,7 +325,7 @@ const Game = {
           if (s.hp <= 0) {
             s.dead = true;
             s.respawnT = s.isHero ? HERO_RESPAWN
-              : TOWER_TYPES[s.tower.type].levels[s.tower.level].respawn;
+              : towerStats(s.tower).respawn;
             for (const e2 of this.enemies) if (e2.blockedBy === s) e2.blockedBy = null;
             this.poof(s.x, s.y);
             if (s.isHero) this.floatText(s.x, s.y - 14, `${s.def.emoji} down!`, '#ef9a9a');
@@ -341,7 +356,7 @@ const Game = {
       if (s.dead) {
         s.respawnT -= dt;
         if (s.respawnT <= 0) {
-          const lv = TOWER_TYPES[s.tower.type].levels[s.tower.level];
+          const lv = towerStats(s.tower);
           s.dead = false; s.hp = lv.soldierHp; s.maxHp = lv.soldierHp;
           s.x = s.tower.x; s.y = s.tower.y;
           this.poof(s.x, s.y);
@@ -375,8 +390,7 @@ const Game = {
         s.cool -= dt;
         if (s.cool <= 0) {
           s.cool = 0.9;
-          const lv = TOWER_TYPES[s.tower.type].levels[s.tower.level];
-          this.dealDamage(s.target, lv.damage, 'physical');
+          this.dealDamage(s.target, towerStats(s.tower).damage, 'physical');
         }
       }
     }
@@ -495,7 +509,7 @@ const Game = {
     for (const t of this.towers) {
       const def = TOWER_TYPES[t.type];
       if (def.barracks) continue;
-      const lv = def.levels[t.level];
+      const lv = towerStats(t);
       t.cool -= dt;
       if (t.cool > 0) continue;
 
@@ -526,14 +540,15 @@ const Game = {
           kind: 'durian', sx: t.x, sy: t.y - 24, x: t.x, y: t.y - 24,
           tx: target.x + (target.def.speed * 0.35) * 0, ty: target.y,
           target, speed: 260, damage: lv.damage, dmgType: 'physical',
-          splash: def.splash + t.level * 8, arc: 0, t: 0,
+          splash: lv.splash || (def.splash + t.level * 8),
+          big: t.level >= 3 && t.ult === 0, arc: 0, t: 0,
         });
         break;
       case 'temple':
         this.projectiles.push({
           kind: 'talisman', sx: t.x, sy: t.y - 30, x: t.x, y: t.y - 30,
           target, speed: 420, damage: lv.damage, dmgType: 'magic',
-          slow: def.slow, t: 0,
+          slow: lv.slow || def.slow, t: 0,
         });
         Sound.magic();
         break;
@@ -549,7 +564,7 @@ const Game = {
         this.projectiles.push({
           kind: 'wokfire', sx: t.x, sy: t.y - 26, x: t.x, y: t.y - 26,
           target, speed: 320, damage: lv.damage, dmgType: 'physical',
-          splash: def.splash + t.level * 6,
+          splash: lv.splash || (def.splash + t.level * 6),
           burn: { dps: lv.burnDps, dur: def.burnDur }, arc: 0, t: 0,
         });
         break;

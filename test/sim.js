@@ -84,6 +84,11 @@ function simulate(li, mode = 'campaign') {
         if (t.level < def.levels.length - 1 && Game.gold >= def.levels[t.level + 1].cost + 80) {
           Game.upgrade(t); break;
         }
+        // max level → pick an ultimate (alternate between the two paths)
+        if (t.level === def.levels.length - 1 && def.ults) {
+          const ui = t.id % 2;
+          if (Game.gold >= def.ults[ui].cost + 80) { Game.chooseUlt(t, ui); break; }
+        }
       }
     }
     if (!Game.waveActive && Game.canCallWave() && Game.enemies.length === 0 && Game.spawnQueue.length === 0)
