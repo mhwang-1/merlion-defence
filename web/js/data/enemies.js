@@ -11,71 +11,71 @@ const ENEMY_TYPES = {
   // --- fodder ---
   toyol: {
     name: 'Toyol', emoji: '👶', origin: 'Malay',
-    hp: 42, speed: 78, armor: 0, resist: 0, bounty: 6, lives: 1,
+    hp: 72, speed: 78, armor: 0, resist: 0, bounty: 6, lives: 1,
     size: 13, color: '#8bc34a',
     desc: 'Mischievous child spirit that steals from the living.',
   },
   pocong: {
     name: 'Pocong', emoji: '🧟', origin: 'Indonesian/Malay',
-    hp: 80, speed: 46, armor: 0.1, resist: 0, bounty: 9, lives: 1,
+    hp: 110, speed: 46, armor: 0.1, resist: 0, bounty: 9, lives: 1,
     size: 15, color: '#e0e0e0',
     desc: 'A hopping shrouded ghost, bound in its burial cloth.',
   },
   pontianak: {
     name: 'Pontianak', emoji: '👻', origin: 'Malay',
-    hp: 70, speed: 95, armor: 0, resist: 0.35, bounty: 12, lives: 1,
+    hp: 100, speed: 95, armor: 0, resist: 0.35, bounty: 12, lives: 1,
     size: 15, color: '#f8bbd0',
     desc: 'Vengeful female spirit announced by the scent of frangipani.',
   },
   // --- flying ---
   manananggal: {
     name: 'Manananggal', emoji: '🦇', origin: 'Filipino',
-    hp: 60, speed: 85, armor: 0, resist: 0.2, bounty: 14, lives: 1,
+    hp: 90, speed: 85, armor: 0, resist: 0.2, bounty: 14, lives: 1,
     size: 15, color: '#ce93d8', flying: true,
     desc: 'Self-severing viscera-flyer of Philippine legend.',
   },
   garuda: {
     name: 'Garuda Hatchling', emoji: '🦅', origin: 'Hindu/Buddhist',
-    hp: 150, speed: 70, armor: 0.25, resist: 0.1, bounty: 20, lives: 1,
+    hp: 180, speed: 70, armor: 0.25, resist: 0.1, bounty: 20, lives: 1,
     size: 17, color: '#ffb74d', flying: true,
     desc: 'Young of the divine eagle. Armoured feathers deflect bullets.',
   },
   // --- armored / tanks ---
   jiangshi: {
     name: 'Jiangshi', emoji: '🧛', origin: 'Chinese',
-    hp: 190, speed: 38, armor: 0.5, resist: 0, bounty: 18, lives: 1,
+    hp: 220, speed: 38, armor: 0.5, resist: 0, bounty: 18, lives: 1,
     size: 16, color: '#90a4ae',
     desc: 'Hopping vampire in Qing robes. Stiff but very sturdy.',
   },
   rakshasa: {
     name: 'Rakshasa', emoji: '👹', origin: 'Indian',
-    hp: 320, speed: 52, armor: 0.35, resist: 0.35, bounty: 30, lives: 2,
+    hp: 350, speed: 52, armor: 0.35, resist: 0.35, bounty: 30, lives: 2,
     size: 19, color: '#ef5350',
     desc: 'Shape-shifting demon warrior of the epics.',
   },
   oni: {
     name: 'Oni', emoji: '👺', origin: 'Japanese',
-    hp: 420, speed: 40, armor: 0.55, resist: 0.1, bounty: 34, lives: 2,
+    hp: 450, speed: 40, armor: 0.55, resist: 0.1, bounty: 34, lives: 2,
     size: 20, color: '#e53935',
     desc: 'Club-wielding ogre. Nearly immune to physical attacks.',
   },
   // --- spectral (magic-resist) ---
   hantuRaya: {
     name: 'Hantu Raya', emoji: '🌑', origin: 'Malay',
-    hp: 260, speed: 55, armor: 0.1, resist: 0.6, bounty: 28, lives: 2,
+    hp: 290, speed: 55, armor: 0.1, resist: 0.6, bounty: 28, lives: 2,
     size: 18, color: '#7e57c2',
     desc: 'A grand spirit familiar; talismans barely touch it.',
   },
   krasue: {
     name: 'Krasue', emoji: '💀', origin: 'Thai/Khmer',
-    hp: 110, speed: 105, armor: 0, resist: 0.5, bounty: 18, lives: 1,
+    hp: 140, speed: 105, armor: 0, resist: 0.5, bounty: 18, lives: 1,
     size: 14, color: '#ff8a65', flying: true,
     desc: 'Floating head trailing its organs — fast and eerie.',
   },
   // --- swarm ---
   kuntilanakSwarm: {
     name: 'Orang Minyak', emoji: '🛢', origin: 'Malay',
-    hp: 55, speed: 120, armor: 0.15, resist: 0.15, bounty: 8, lives: 1,
+    hp: 85, speed: 120, armor: 0.15, resist: 0.15, bounty: 8, lives: 1,
     size: 13, color: '#4e342e',
     desc: 'Slippery oily man — hard to catch, quick on his feet.',
   },
