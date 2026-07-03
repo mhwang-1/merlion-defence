@@ -9,19 +9,22 @@
 </head>
 <body>
 
+<!-- Animated pixel-art Singapore backdrop (menus only) -->
+<canvas id="menu-bg"></canvas>
+
 <!-- ============ MAIN MENU ============ -->
 <div id="screen-menu" class="screen active">
   <div class="menu-box">
     <div class="title-merlion">🦁</div>
     <h1>MERLION<br>DEFENSE</h1>
     <p class="tagline">Hawkers, HDBs &amp; Hantus — defend the Lion City from the spirits of Asian legend</p>
-    <button class="big-btn" id="btn-play">▶ &nbsp;PLAY</button>
-    <button class="big-btn secondary" id="btn-armory">🎖 &nbsp;ARMORY</button>
-    <button class="big-btn secondary" id="btn-help">📖 &nbsp;HOW TO PLAY</button>
-    <button class="big-btn secondary" id="btn-reset">🗑 &nbsp;RESET PROGRESS</button>
+    <button class="big-btn" id="btn-play">PLAY</button>
+    <button class="big-btn secondary" id="btn-armory">ARMORY</button>
+    <button class="big-btn secondary" id="btn-help">HOW TO PLAY</button>
+    <button class="big-btn secondary" id="btn-reset">RESET PROGRESS</button>
     <div class="save-row">
-      <button class="small-btn" id="btn-export">⬇ EXPORT SAVE</button>
-      <button class="small-btn" id="btn-import">⬆ LOAD SAVE</button>
+      <button class="small-btn" id="btn-export">EXPORT SAVE</button>
+      <button class="small-btn" id="btn-import">LOAD SAVE</button>
       <input type="file" id="import-file" accept=".json,application/json" hidden>
     </div>
     <p class="credits">30 real neighbourhoods · 3 modes · 8 towers · 10 heroes · 14 folklore creatures</p>
@@ -63,17 +66,17 @@
         <p><b>Armoured</b> spirits resist physical hits — use the Temple. <b>Spectral</b> ones resist magic — use durians &amp; 5G. <b>Flying</b> hantus ignore roads and soldiers.</p>
       </div>
     </div>
-    <button class="big-btn" id="btn-help-back">← BACK</button>
+    <button class="big-btn" id="btn-help-back">BACK</button>
   </div>
 </div>
 
 <!-- ============ LEVEL SELECT ============ -->
 <div id="screen-levels" class="screen">
   <div class="levels-header">
-    <button class="small-btn" id="btn-levels-back">← MENU</button>
+    <button class="small-btn" id="btn-levels-back">MENU</button>
     <h2>Choose a Neighbourhood</h2>
     <div class="levels-header-right">
-      <button class="small-btn" id="btn-levels-armory">🎖 ARMORY</button>
+      <button class="small-btn" id="btn-levels-armory">ARMORY</button>
       <div id="total-stars" class="total-stars">★ 0 / 150</div>
     </div>
   </div>
@@ -85,7 +88,7 @@
 <!-- ============ ARMORY ============ -->
 <div id="screen-armory" class="screen">
   <div class="levels-header">
-    <button class="small-btn" id="btn-armory-back">← MENU</button>
+    <button class="small-btn" id="btn-armory-back">MENU</button>
     <h2>🎖 Armory</h2>
     <div id="armory-merits" class="total-stars">🎖 0 merits</div>
   </div>
@@ -105,14 +108,14 @@
         <span class="hud-item" id="hud-wave">🌊 0/8</span>
       </div>
       <div class="hud-right">
-        <button class="hud-btn" id="btn-mute" title="Sound">🔊</button>
+        <button class="hud-btn" id="btn-mute" title="Sound"></button>
         <button class="hud-btn" id="btn-speed" title="Speed">1×</button>
-        <button class="hud-btn" id="btn-pause" title="Pause">⏸</button>
-        <button class="hud-btn" id="btn-quit" title="Quit">🏠</button>
+        <button class="hud-btn" id="btn-pause" title="Pause"></button>
+        <button class="hud-btn" id="btn-quit" title="Quit"></button>
       </div>
     </div>
 
-    <button id="btn-next-wave">⚔ NEXT WAVE <span id="next-wave-timer"></span></button>
+    <button id="btn-next-wave">NEXT WAVE <span id="next-wave-timer"></span></button>
 
     <!-- Build menu popup -->
     <div id="build-menu" class="popup hidden"></div>
@@ -129,9 +132,9 @@
         <div id="end-stars" class="end-stars"></div>
         <p id="end-msg"></p>
         <div class="end-btns">
-          <button class="big-btn" id="btn-end-next">NEXT LEVEL ▶</button>
-          <button class="big-btn secondary" id="btn-end-retry">↻ RETRY</button>
-          <button class="big-btn secondary" id="btn-end-map">🗺 MAP</button>
+          <button class="big-btn" id="btn-end-next">NEXT LEVEL</button>
+          <button class="big-btn secondary" id="btn-end-retry">RETRY</button>
+          <button class="big-btn secondary" id="btn-end-map">MAP</button>
         </div>
       </div>
     </div>
@@ -141,9 +144,9 @@
       <div class="end-box">
         <h2>Paused</h2>
         <div class="end-btns">
-          <button class="big-btn" id="btn-resume">▶ RESUME</button>
-          <button class="big-btn secondary" id="btn-pause-retry">↻ RESTART</button>
-          <button class="big-btn secondary" id="btn-pause-map">🗺 MAP</button>
+          <button class="big-btn" id="btn-resume">RESUME</button>
+          <button class="big-btn secondary" id="btn-pause-retry">RESTART</button>
+          <button class="big-btn secondary" id="btn-pause-map">MAP</button>
         </div>
       </div>
     </div>
@@ -161,6 +164,7 @@
 <script src="js/render.js"></script>
 <script src="js/game.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/menubg.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

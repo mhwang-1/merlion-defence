@@ -43,7 +43,7 @@ const LEVELS = [
   { name: 'Hougang Ave 8',       diff: 'normal', layout: 6,  theme: 'town',   tod: 'day',     waves: 8,  gold: 270, lives: 18 },
   { name: 'Pasir Ris Park',      diff: 'normal', layout: 7,  theme: 'coast',  tod: 'morning', waves: 8,  gold: 270, lives: 18 },
   { name: 'Tampines Hub',        diff: 'normal', layout: 8,  theme: 'town',   tod: 'day',     waves: 9,  gold: 280, lives: 18 },
-  { name: 'Punggol Waterway',    diff: 'normal', layout: 9,  theme: 'river',  tod: 'evening', waves: 9,  gold: 470, lives: 18, boss: 'nagaBoss' },
+  { name: 'Punggol Waterway',    diff: 'normal', layout: 9,  theme: 'river',  tod: 'evening', waves: 9,  gold: 620, lives: 18, boss: 'nagaBoss' },
   { name: 'Changi Village',      diff: 'normal', layout: 10, theme: 'coast',  tod: 'morning', waves: 9,  gold: 280, lives: 16 },
   { name: 'Bedok Interchange',   diff: 'normal', layout: 11, theme: 'town',   tod: 'day',     waves: 9,  gold: 340, lives: 16 },
   { name: 'Geylang Serai',       diff: 'normal', layout: 12, theme: 'town',   tod: 'night',   waves: 10, gold: 290, lives: 16 },
@@ -55,7 +55,7 @@ const LEVELS = [
   { name: 'Bukit Timah Hill',    diff: 'hard',   layout: 16, theme: 'forest', tod: 'day',     waves: 11, gold: 300, lives: 15 },
   { name: 'Bukit Batok Quarry',  diff: 'hard',   layout: 17, theme: 'forest', tod: 'evening', waves: 11, gold: 310, lives: 15 },
   { name: 'Jurong Lake Gardens', diff: 'hard',   layout: 18, theme: 'park',   tod: 'day',     waves: 11, gold: 310, lives: 15 },
-  { name: 'Clementi Forest',     diff: 'hard',   layout: 19, theme: 'forest', tod: 'night',   waves: 12, gold: 320, lives: 15 },
+  { name: 'Clementi Forest',     diff: 'hard',   layout: 19, theme: 'forest', tod: 'night',   waves: 12, gold: 560, lives: 15 },
   { name: 'Haw Par Villa',       diff: 'hard',   layout: 20, theme: 'park',   tod: 'evening', waves: 12, gold: 330, lives: 12, boss: 'rangda' },
   { name: 'Queenstown Commons',  diff: 'hard',   layout: 21, theme: 'town',   tod: 'day',     waves: 12, gold: 380, lives: 12 },
   { name: 'Tiong Bahru Estate',  diff: 'hard',   layout: 22, theme: 'town',   tod: 'morning', waves: 12, gold: 330, lives: 12 },
@@ -80,8 +80,10 @@ const ACTS = [
 
 /* Difficulty scaling factors — tuned up now that heroes fight alongside
    the towers (every level fields 1 hero in acts 1-2, 2 heroes in 3-4),
-   and up AGAIN for the 8-tower arsenal + capped pads (12/level).       */
-const DIFF_SCALE = { easy: 1.18, normal: 1.26, hard: 1.44, heroic: 1.52 };
+   and up AGAIN for the 8-tower arsenal + capped pads (12/level).
+   Whole ladder shifted one tier up (easy≈old normal … heroic beyond
+   the old top) after playtests found the game too easy.               */
+const DIFF_SCALE = { easy: 1.26, normal: 1.44, hard: 1.52, heroic: 1.64 };
 
 /* ===== Game modes (Kingdom Rush style) =====
    campaign — the story mode; earn up to ★★★.
@@ -189,12 +191,12 @@ function genWaves(li, mode = 'campaign') {
     waves.push(groups);
   }
 
-  // Boss finale (×0.85 keeps boss HP near its pre-rebalance level — the
+  // Boss finale (×0.72 keeps boss HP near its pre-rebalance level — the
   // harder REGULAR waves are where the new difficulty lives)
   if (lv.boss) {
     waves[waves.length - 1].push({
       type: lv.boss, count: 1, gap: 0, delay: 5,
-      pathIndex: 0, hpMul: scale * 0.85 * (1 + li * 0.05),
+      pathIndex: 0, hpMul: scale * 0.72 * (1 + li * 0.05),
     });
   }
   return waves;

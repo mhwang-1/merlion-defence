@@ -42,6 +42,8 @@ if (_auto) {
   Sound.muted = true;
   UI.show('levels'); UI.renderLevels();
   UI.showModePicker(parseInt(_qs.get('showmodes')) || 0);
+} else if (_qs.get('screen')) {
+  UI.show(_qs.get('screen'));   // dev: ?screen=help|menu|levels|armory
 } else if (_qs.get('showarmory') !== null) {
   Sound.muted = true;
   if (_qs.get('merits')) { Progress.data.merits = parseInt(_qs.get('merits')) || 0; }

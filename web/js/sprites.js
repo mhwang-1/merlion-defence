@@ -812,6 +812,189 @@ Sprites.def('command_post', {
   "..oooooooooooooooooooo..",
 ]);
 
+/* ================= UI ICONS (pixel-art buttons) ================= */
+
+Sprites.def('ui_play', { o: '#4a3208', y: '#ffd23c', w: '#fff2c0' }, [
+  "oo........",
+  "oyoo......",
+  "owyyoo....",
+  "owyyyyoo..",
+  "owyyyyyyo.",
+  "owyyyyyyo.",
+  "owyyyyoo..",
+  "owyyoo....",
+  "oyoo......",
+  "oo........",
+]);
+
+Sprites.def('ui_pause', { o: '#4a3208', y: '#ffd23c', w: '#fff2c0' }, [
+  "ooo...ooo",
+  "owyo.owyo",
+  "owyo.owyo",
+  "owyo.owyo",
+  "owyo.owyo",
+  "owyo.owyo",
+  "owyo.owyo",
+  "owyo.owyo",
+  "ooo...ooo",
+]);
+
+Sprites.def('ui_home', { o: '#3a2210', r: '#d94f3d', s: '#a83828', w: '#fdf3dd', d: '#8a5a2a', k: '#5f3a16' }, [
+  "....oo....",
+  "...orro...",
+  "..orrrro..",
+  ".orrssrro.",
+  "orrssssrro",
+  "o.owwwwo.o",
+  "..owkdwo..",
+  "..owkdwo..",
+  "..owkdwo..",
+  "..oooooo..",
+]);
+
+Sprites.def('ui_sound', { o: '#3a2210', y: '#ffd23c', d: '#c8962a', c: '#4aa8d8' }, [
+  "....oo..c.",
+  "...oyo.c.c",
+  "..oyyo..c.",
+  "ooyyyo.c.c",
+  "oydyyo.c.c",
+  "oydyyo.c.c",
+  "ooyyyo.c.c",
+  "..oyyo..c.",
+  "...oyo.c.c",
+  "....oo..c.",
+]);
+
+Sprites.def('ui_mute', { o: '#3a2210', y: '#b0a894', d: '#8a8272', r: '#d94f3d' }, [
+  "....oo....",
+  "...oyo....",
+  "..oyyor..r",
+  "ooyyyo.rr.",
+  "oydyyo.rr.",
+  "oydyyor..r",
+  "ooyyyor..r",
+  "..oyyo.rr.",
+  "...oyo.rr.",
+  "....oor..r",
+]);
+
+Sprites.def('ui_book', { o: '#3a2210', r: '#c53030', w: '#fdf3dd', g: '#cfc4ae' }, [
+  "..oooooo..",
+  ".owwowwro.",
+  "owgwowwrro",
+  "owwwowwrro",
+  "owgwowwrro",
+  "owwwowwrro",
+  "owgwowwrro",
+  "owwwowwrro",
+  ".owwowwro.",
+  "..oooooo..",
+]);
+
+Sprites.def('ui_medal', { o: '#3a2210', y: '#ffd23c', d: '#c8962a', r: '#d94f3d', b: '#4aa8d8', w: '#fff2c0' }, [
+  "..or..bo..",
+  "..orr.bbo.",
+  "..orrbbo..",
+  "...oyyo...",
+  "..oyyyyo..",
+  ".oyywwyyo.",
+  ".oyywwyyo.",
+  ".oydyyydo.",
+  "..oyddyo..",
+  "...oooo...",
+]);
+
+Sprites.def('ui_trash', { o: '#3a2210', s: '#9aa8b4', d: '#5f6e7a', r: '#d94f3d' }, [
+  "...oooo...",
+  ".oossssoo.",
+  ".osssssso.",
+  ".oooooooo.",
+  "..ossssso.",
+  "..osdsdso.",
+  "..osdsdso.",
+  "..osdsdso.",
+  "..ossssso.",
+  "...ooooo..",
+]);
+
+Sprites.def('ui_down', { o: '#3a2210', g: '#4c9a3c', w: '#c8e8b8' }, [
+  "...oooo...",
+  "...owggo..",
+  "...owggo..",
+  "...owggo..",
+  ".oowwggoo.",
+  ".owwggggo.",
+  "..owggo...",
+  "...owgo...",
+  "....oo....",
+  "..oooooo..",
+]);
+
+Sprites.def('ui_up', { o: '#3a2210', b: '#4aa8d8', w: '#c8e8f8' }, [
+  "..oooooo..",
+  "....oo....",
+  "...owbo...",
+  "..owwbbo..",
+  ".owwbbbbo.",
+  ".oowwbboo.",
+  "...owbbo..",
+  "...owbbo..",
+  "...owbbo..",
+  "...oooo...",
+]);
+
+Sprites.def('ui_back', { o: '#3a2210', y: '#ffd23c', w: '#fff2c0' }, [
+  "....oo....",
+  "...owo....",
+  "..owyo....",
+  ".owyyooooo",
+  "owyyyyyyyo",
+  "owyyyyyyyo",
+  ".owyyooooo",
+  "..owyo....",
+  "...owo....",
+  "....oo....",
+]);
+
+Sprites.def('ui_map', { o: '#3a2210', g: '#7cc47c', b: '#4aa8d8', w: '#fdf3dd', r: '#d94f3d' }, [
+  "oooooooooo",
+  "owwgggwbbo",
+  "owgggwwbbo",
+  "owggwwbbwo",
+  "owgwwrbbwo",
+  "owwwwbbwwo",
+  "owwwbbwwgo",
+  "owwbbwwggo",
+  "owbbwwgggo",
+  "oooooooooo",
+]);
+
+Sprites.def('ui_retry', { o: '#3a2210', y: '#ffd23c', w: '#fff2c0' }, [
+  "...oooo...",
+  "..oyyyyoo.",
+  ".oyo..oyyo",
+  "oyo...oyyo",
+  "oyo..oyyyy",
+  "oyo...oyo.",
+  "oyo....o..",
+  ".oyo..oyo.",
+  "..oyyyyo..",
+  "...oooo...",
+]);
+
+Sprites.def('ui_sword', { o: '#2a1c08', s: '#d8e4ec', w: '#f6fbff', y: '#ffd23c', b: '#8a5a2a' }, [
+  ".......oo.",
+  "......oswo",
+  ".....oswo.",
+  "....oswo..",
+  "oo.oswo...",
+  "oyoswo....",
+  ".oyyo.....",
+  ".oyyyo....",
+  "oyo.oyo...",
+  "obo..oo...",
+]);
+
 /* Merlion for the main menu */
 Sprites.def('merlion', { o: '#26343c', w: '#eef4f6', s: '#c2d4dc', b: '#7ec8e8', k: '#182226' }, [
   ".....ooooo......",

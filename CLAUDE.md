@@ -52,7 +52,11 @@ web/js/render.js       Renderer: buildBackground() bakes static map to offscreen
                        canvas; draw() per frame; MRT train animation
                        (initTrains/updateTrains/drawTrains)
 web/js/game.js         Game (state machine, combat, waves) + Progress (localStorage)
-web/js/ui.js           UI: screens, level select w/ mode picker, popups, HUD
+web/js/ui.js           UI: screens, level select w/ mode picker, popups, HUD;
+                       injects pixel-art button icons (Sprites 'ui_*')
+web/js/menubg.js       MenuBG: animated pixel Singapore skyline behind the
+                       light-themed menu/armory/help screens (own rAF, only
+                       animates when a non-game screen is active)
 web/js/main.js         rAF loop + dev URL params
 ```
 
@@ -131,7 +135,7 @@ real streets. MRT trains animate on real viaducts.
 All wave gen is deterministic via `makeRng(seed)` — same level+mode always
 produces identical waves. In `levels.js`:
 - Campaign: `budget = (54 + li*6.0) * (1 + progress*1.7) * scale`,
-  boss hpMul ×0.85
+  boss hpMul ×0.72
 - Heroic:   `(40 + li*2.8) * (0.9 + progress*1.1) * scale`, boss hpMul ×0.55
 - Iron:     `(30 + li*1.9) * (0.85 + progress*0.9) * scale`, group delay
   10–16s apart, boss hpMul ×0.38 (restricted towers can't burst a boss)

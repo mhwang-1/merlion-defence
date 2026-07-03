@@ -14,6 +14,28 @@ const UI = {
     const tm = document.querySelector('.title-merlion');
     if (tm) tm.innerHTML = `<img src="${Sprites.url('merlion')}" alt="Merlion" class="pixel-merlion">`;
 
+    // pixel-art icons baked into buttons (id → sprite)
+    const ICONS = {
+      'btn-play': 'ui_play', 'btn-armory': 'ui_medal', 'btn-help': 'ui_book',
+      'btn-reset': 'ui_trash', 'btn-export': 'ui_down', 'btn-import': 'ui_up',
+      'btn-help-back': 'ui_back', 'btn-levels-back': 'ui_back',
+      'btn-armory-back': 'ui_back', 'btn-levels-armory': 'ui_medal',
+      'btn-mute': 'ui_sound', 'btn-pause': 'ui_pause', 'btn-quit': 'ui_home',
+      'btn-next-wave': 'ui_sword', 'btn-end-next': 'ui_play',
+      'btn-end-retry': 'ui_retry', 'btn-end-map': 'ui_map',
+      'btn-resume': 'ui_play', 'btn-pause-retry': 'ui_retry',
+      'btn-pause-map': 'ui_map',
+    };
+    for (const [id, spr] of Object.entries(ICONS)) {
+      const b = $(id);
+      if (!b) continue;
+      const img = document.createElement('img');
+      img.src = Sprites.url(spr);
+      img.className = 'btn-pix';
+      img.alt = '';
+      b.prepend(img);
+    }
+
     // menu
     $('btn-play').onclick = () => { Sound.ensure(); this.show('levels'); this.renderLevels(); };
     $('btn-armory').onclick = () => { Sound.ensure(); this.show('armory'); this.renderArmory(); };
@@ -41,7 +63,7 @@ const UI = {
     };
     $('btn-mute').onclick = () => {
       Sound.muted = !Sound.muted;
-      $('btn-mute').textContent = Sound.muted ? '🔇' : '🔊';
+      $('btn-mute').querySelector('img').src = Sprites.url(Sound.muted ? 'ui_mute' : 'ui_sound');
     };
     $('btn-quit').onclick = () => { this.show('levels'); this.renderLevels(); Game.running = false; };
 
@@ -190,7 +212,7 @@ const UI = {
       card.innerHTML = `
         <div class="lv-num">LEVEL ${i + 1}</div>
         <div class="lv-name">${unlocked ? lv.name : '🔒 ' + lv.name}</div>
-        <div class="lv-stars">${'★'.repeat(stars)}<span style="color:#45586a">${'★'.repeat(3 - stars)}</span>${badges}</div>
+        <div class="lv-stars">${'★'.repeat(stars)}<span style="color:#d8cdb0">${'★'.repeat(3 - stars)}</span>${badges}</div>
         <div class="lv-diff diff-${lv.diff}">${lv.diff.toUpperCase()} <span title="${TIMES_OF_DAY[lv.tod || 'day'].name}">${TIMES_OF_DAY[lv.tod || 'day'].icon}</span></div>`;
       if (unlocked) card.onclick = () => chal ? this.showModePicker(i) : this.startLevel(i, 'campaign');
       grid.appendChild(card);
