@@ -29,6 +29,7 @@ Object.keys(Sound).forEach(k => { if (typeof Sound[k] === 'function') Sound[k] =
  'js/data/levels.js', 'js/render.js', 'js/game.js'].forEach(load);
 Renderer.buildBackground = () => {};
 Renderer.initTrains = () => {};
+Renderer.initPeople = () => {};
 global.UI = { banner() {}, showEnd() {} };
 // sim plays with everything unlocked (players buy unlocks with merits)
 for (const k of Object.keys(TOWER_TYPES)) Progress.data.towersU[k] = true;

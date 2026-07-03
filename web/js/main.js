@@ -14,7 +14,10 @@ function frame(now) {
     // multiple fixed-ish substeps for fast-forward stability
     const steps = Game.speed;
     for (let i = 0; i < steps; i++) Game.update(raw);
-    if (!Game.paused) Renderer.updateTrains(raw); // MRT trains keep rolling
+    if (!Game.paused) {
+      Renderer.updateTrains(raw);  // MRT trains keep rolling
+      Renderer.updatePeople(raw);  // ambient people keep strolling
+    }
     Renderer.draw(UI.ctx, Game);
     UI.refreshHud();
   }

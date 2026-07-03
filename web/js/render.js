@@ -29,6 +29,7 @@ const Renderer = {
   tod: null,         // active time-of-day config
   railPaths: [],     // built rail polylines for the train animation
   trains: [],        // animated trains { path, d, speed, dir }
+  people: [],        // ambient pixel people near map features
 
   /** Pre-render static background for a level. */
   buildBackground(level, layout, paths) {
@@ -182,40 +183,57 @@ const Renderer = {
       this.opsCommand(g, pn[0], pn[1]);
     }
 
-    // ---- build pads (high contrast so they read against real buildings) ----
+    // ---- build pads (poured concrete slabs, high contrast) ----
     for (const [x, y] of layout.spots) {
       // soft ground shadow
       g.fillStyle = 'rgba(0,0,0,.28)';
       g.beginPath(); g.ellipse(x + 2, y + 14, 24, 7, 0, 0, 7); g.fill();
-      // bevelled concrete slab
-      g.fillStyle = '#6d5527';                       // dark under-edge
+      // bevelled slab: cool grey concrete
+      g.fillStyle = '#4c4f55';                       // dark under-edge
       g.fillRect(x - 23, y - 16, 46, 32);
-      g.fillStyle = '#a8894c';                       // side face
+      g.fillStyle = '#84888f';                       // side face
       g.fillRect(x - 23, y - 17, 46, 30);
-      g.fillStyle = '#e0c37c';                       // top-lit rim
+      g.fillStyle = '#c9ccd1';                       // top-lit rim
       g.fillRect(x - 21, y - 15, 42, 2);
-      g.fillStyle = '#d2b264';                       // slab top
+      g.fillStyle = '#aeb2b8';                       // slab top
       g.fillRect(x - 21, y - 13, 42, 24);
-      // fine concrete texture flecks
-      g.fillStyle = 'rgba(255,255,255,.14)';
-      g.fillRect(x - 16, y - 9, 3, 2); g.fillRect(x + 6, y - 5, 4, 2);
-      g.fillRect(x - 6, y + 5, 3, 2);  g.fillRect(x + 12, y + 3, 3, 2);
-      g.fillStyle = 'rgba(0,0,0,.10)';
-      g.fillRect(x - 10, y - 3, 4, 2); g.fillRect(x + 2, y + 7, 4, 2);
-      g.fillRect(x + 14, y - 9, 3, 2);
-      // hazard-stripe corner chevrons (fine 3px steps)
-      g.fillStyle = '#4a3a16';
+      // expansion joints (saw-cut lines dividing the pour)
+      g.fillStyle = 'rgba(0,0,0,.18)';
+      g.fillRect(x - 21, y - 2, 42, 1);
+      g.fillRect(x - 1, y - 13, 1, 24);
+      // mottled cement tone patches
+      g.fillStyle = 'rgba(255,255,255,.10)';
+      g.fillRect(x - 18, y - 10, 7, 4); g.fillRect(x + 5, y - 7, 9, 3);
+      g.fillRect(x - 8, y + 4, 6, 4);   g.fillRect(x + 11, y + 2, 6, 5);
+      g.fillStyle = 'rgba(0,0,0,.08)';
+      g.fillRect(x - 12, y - 5, 6, 3); g.fillRect(x + 2, y + 6, 8, 3);
+      g.fillRect(x + 13, y - 11, 5, 3); g.fillRect(x - 19, y + 6, 5, 3);
+      // fine aggregate speckle
+      g.fillStyle = 'rgba(0,0,0,.16)';
+      g.fillRect(x - 15, y - 8, 1, 1); g.fillRect(x + 8, y - 4, 1, 1);
+      g.fillRect(x - 4, y + 7, 1, 1);  g.fillRect(x + 16, y + 5, 1, 1);
+      g.fillRect(x - 9, y - 11, 1, 1); g.fillRect(x + 3, y - 9, 1, 1);
+      g.fillStyle = 'rgba(255,255,255,.22)';
+      g.fillRect(x - 13, y + 3, 1, 1); g.fillRect(x + 12, y - 7, 1, 1);
+      g.fillRect(x + 6, y + 8, 1, 1);  g.fillRect(x - 17, y - 3, 1, 1);
+      // corner anchor-bolt plates
+      for (const [cx, cy] of [[-17, -9], [17, -9], [-17, 7], [17, 7]]) {
+        g.fillStyle = '#7a7e85';
+        g.fillRect(x + cx - 2, y + cy - 2, 5, 5);
+        g.fillStyle = '#d8dade';
+        g.fillRect(x + cx - 1, y + cy - 1, 2, 2);
+      }
+      // hazard-stripe edge chevrons (worksite yellow/black)
       for (const [cx, cy, dx, dy] of [[-21, -13, 1, 1], [21, -13, -1, 1], [-21, 11, 1, -1], [21, 11, -1, -1]]) {
+        g.fillStyle = '#2e2e2e';
         g.fillRect(x + cx + (dx < 0 ? -9 : 0), y + cy + (dy < 0 ? -3 : 0), 9, 3);
         g.fillRect(x + cx + (dx < 0 ? -3 : 0), y + cy + (dy < 0 ? -9 : 0), 3, 9);
-      }
-      g.fillStyle = '#e8b13a';
-      for (const [cx, cy, dx, dy] of [[-21, -13, 1, 1], [21, -13, -1, 1], [-21, 11, 1, -1], [21, 11, -1, -1]]) {
+        g.fillStyle = '#e8b13a';
         g.fillRect(x + cx + dx * 3 + (dx < 0 ? -3 : 0), y + cy + (dy < 0 ? -3 : 0), 3, 3);
         g.fillRect(x + cx + (dx < 0 ? -3 : 0), y + cy + dy * 3 + (dy < 0 ? -3 : 0), 3, 3);
       }
-      // crane / build glyph (finer)
-      g.fillStyle = '#8a6a28';
+      // crane / build glyph (stencil-painted on the slab)
+      g.fillStyle = '#5d646d';
       g.fillRect(x - 7, y - 6, 14, 3);
       g.fillRect(x - 2, y - 3, 3, 9);
       g.fillRect(x - 4, y + 6, 8, 2);
@@ -231,10 +249,13 @@ const Renderer = {
     // ---- Singapore street furniture along the route ----
     this.streetFurniture(g, geo, layout, paths, rng);
 
+    // ---- real parks get real trees (dense canopy, not just a tint) ----
+    this.parkTrees(g, geo, layout, paths, theme, rng);
+
     // ---- scenery decorations on open ground ----
-    const decos = { hdb: 7, trees: 12, jungle: 16, coast: 8, shophouse: 6 }[theme.deco];
+    const decos = { hdb: 14, trees: 24, jungle: 32, coast: 22, shophouse: 12 }[theme.deco];
     let placed = 0, tries = 0;
-    while (placed < decos && tries < 500) {
+    while (placed < decos && tries < 900) {
       tries++;
       const x = 40 + rng() * 880, y = 60 + rng() * 500;
       if (!this.openGround(geo, layout, paths, x, y)) continue;
@@ -265,6 +286,7 @@ const Renderer = {
 
     this.bg = c;
     this.initTrains(geo);
+    this.initPeople(geo, layout, level);
   },
 
   openGround(geo, layout, paths, x, y) {
@@ -332,6 +354,152 @@ const Renderer = {
         for (let wx = -CAR / 2 + 3; wx < CAR / 2 - 3; wx += 6) ctx.fillRect(wx, -1, 4, 4);
         ctx.restore();
       }
+    }
+  },
+
+  /* ---------- ambient people (kids at playgrounds, kickabouts on
+     pitches, swimmers in pools, strollers on beaches & in parks) ---------- */
+
+  initPeople(geo, layout, level) {
+    this.people = [];
+    const rng = makeRng(9191 + LEVELS.indexOf(level) * 77);
+    const night = level.tod === 'night';
+    const SKINS = ['#e8bd90', '#d09a62', '#a06a3c', '#7a4e28'];
+    const SHIRTS = ['#e5533c', '#3f9bd8', '#f2b632', '#7bc95e', '#c65cc9', '#f0ede2', '#5a4a9c'];
+    const centroid = pts => {
+      let sx = 0, sy = 0;
+      for (const [x, y] of pts) { sx += x; sy += y; }
+      return [sx / pts.length, sy / pts.length];
+    };
+    const add = (ax, ay, r, kind, n, opts = {}) => {
+      for (let i = 0; i < n; i++) {
+        if (this.people.length >= 64) return;
+        this.people.push({
+          kind, ax, ay, r,
+          x: ax + (rng() - 0.5) * r, y: ay + (rng() - 0.5) * r * 0.7,
+          tx: ax, ty: ay, wait: rng() * 2, seed: rng() * 100, dir: 1,
+          speed: opts.speed || 13,
+          shirt: (opts.shirts || SHIRTS)[Math.floor(rng() * (opts.shirts || SHIRTS).length)],
+          skin: SKINS[Math.floor(rng() * SKINS.length)],
+          poly: opts.poly || null,
+        });
+      }
+    };
+
+    // HDB playgrounds: kids chasing each other + a watching parent
+    if (!night) {
+      for (const [px, py] of (geo.plays || [])) {
+        add(px, py + 4, 30, 'kid', 2 + Math.floor(rng() * 2), { speed: 22 });
+        add(px + 20, py + 8, 12, 'walker', 1, { speed: 6 });
+      }
+    }
+
+    // sports pitches: two-team kickabout inside the real boundary
+    for (const pc of (geo.pitches || [])) {
+      const bb = this.polyBounds(pc.p);
+      if (bb.w * bb.h < 900) continue;
+      const [cx, cy] = centroid(pc.p);
+      const rr = Math.max(bb.w, bb.h) / 2 - 6;
+      add(cx, cy, rr, 'player', night ? 2 : 4, { speed: 30, poly: pc.p, shirts: ['#e5533c', '#3f9bd8'] });
+    }
+
+    // condo pools: bobbing swimmers
+    if (!night) {
+      for (const p of (geo.pools || [])) {
+        const bb = this.polyBounds(p);
+        if (bb.w * bb.h < 260) continue;
+        const [cx, cy] = centroid(p);
+        add(cx, cy, Math.min(bb.w, bb.h) / 2, 'swim', 1 + Math.floor(rng() * 2), { speed: 5, poly: p });
+      }
+    }
+
+    // beaches: strollers on the sand
+    for (const p of (geo.sand || [])) {
+      const bb = this.polyBounds(p);
+      if (bb.w * bb.h < 1500) continue;
+      const [cx, cy] = centroid(p);
+      add(cx, cy, Math.max(bb.w, bb.h) / 2 - 8, 'walker', 2, { speed: 9, poly: p });
+    }
+
+    // parks: a few walkers on open ground
+    let parkPeople = 0;
+    for (const p of (geo.parks || [])) {
+      if (parkPeople >= 6) break;
+      const bb = this.polyBounds(p);
+      for (let tries = 0; tries < 14 && parkPeople < 6; tries++) {
+        const x = bb.x + rng() * bb.w, y = bb.y + rng() * bb.h;
+        if (!pointInPolyR(p, x, y)) continue;
+        if (!this.openGroundLoose(geo, layout, [], x, y)) continue;
+        add(x, y, 22, 'walker', 1, { speed: 9, poly: p });
+        parkPeople++;
+        break;
+      }
+    }
+  },
+
+  updatePeople(dt) {
+    for (const p of this.people) {
+      if (p.wait > 0) { p.wait -= dt; continue; }
+      const dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy);
+      if (d < 2) {
+        // pick a new wander target inside the feature
+        let nx = p.ax, ny = p.ay, ok = !p.poly;
+        for (let tries = 0; tries < 8; tries++) {
+          nx = p.ax + (Math.random() * 2 - 1) * p.r;
+          ny = p.ay + (Math.random() * 2 - 1) * p.r * 0.75;
+          if (!p.poly || pointInPolyR(p.poly, nx, ny)) { ok = true; break; }
+        }
+        if (ok) { p.tx = nx; p.ty = ny; }
+        p.wait = p.kind === 'kid' ? 0.2 + Math.random() * 0.8
+               : p.kind === 'player' ? 0.1 + Math.random() * 0.5
+               : 0.6 + Math.random() * 2.6;
+      } else {
+        p.x += dx / d * p.speed * dt;
+        p.y += dy / d * p.speed * dt;
+        if (Math.abs(dx) > 0.5) p.dir = dx < 0 ? -1 : 1;
+      }
+    }
+  },
+
+  drawPeople(ctx) {
+    const t = performance.now() / 1000;
+    for (const p of this.people) {
+      const x = Math.round(p.x), y = Math.round(p.y);
+      if (p.kind === 'swim') {
+        // bobbing head, arms + ripple in the water
+        const bob = Math.sin(t * 2.2 + p.seed) * 0.9;
+        ctx.fillStyle = 'rgba(255,255,255,.45)';
+        ctx.fillRect(x - 4, y + 2, 9, 1);
+        ctx.fillStyle = p.skin;
+        ctx.fillRect(x - 1, y - 2 + bob, 3, 3);
+        ctx.fillRect(x - 3, y + bob, 1, 1);
+        ctx.fillRect(x + 3, y + bob, 1, 1);
+        continue;
+      }
+      const kid = p.kind === 'kid';
+      const moving = p.wait <= 0;
+      const rate = p.kind === 'player' ? 13 : kid ? 11 : 7;
+      const step = moving ? Math.sin(t * rate + p.seed) : 0;
+      const hop = kid && moving ? -Math.abs(Math.sin(t * rate + p.seed)) * 1.4 : 0;
+      const h = kid ? 7 : 9;             // total height, y = feet
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,.22)';
+      ctx.fillRect(x - 2, y, 5, 1);
+      // legs (alternating)
+      ctx.fillStyle = '#2c2c34';
+      ctx.fillRect(x - 1 + (step > 0.3 ? -1 : 0), y - 2 + hop, 1, 2);
+      ctx.fillRect(x + 1 + (step < -0.3 ? 1 : 0), y - 2 + hop, 1, 2);
+      // body
+      ctx.fillStyle = p.shirt;
+      ctx.fillRect(x - 1, y - h + 3 + hop, 3, h - 5);
+      // arms swing when moving
+      if (moving) {
+        ctx.fillRect(x - 2, y - h + 4 + hop + (step > 0 ? 1 : 0), 1, 2);
+        ctx.fillRect(x + 2, y - h + 4 + hop + (step < 0 ? 1 : 0), 1, 2);
+      }
+      // head
+      ctx.fillStyle = p.skin;
+      ctx.fillRect(x - 1, y - h + hop, 3, 3);
     }
   },
 
@@ -843,6 +1011,31 @@ const Renderer = {
     }
   },
 
+  /* Fill real park / forest polygons with clusters of trees so green
+     spaces read as lush canopy instead of a bare tinted lawn. */
+  parkTrees(g, geo, layout, paths, theme, rng) {
+    const pool = theme.deco === 'coast'
+      ? ['palm', 'tree', 'bush', 'palm']
+      : ['tree', 'rain_tree', 'bush', 'tree'];
+    let total = 0;
+    for (const p of (geo.parks || [])) {
+      const bb = this.polyBounds(p);
+      if (bb.w < 24 || bb.h < 24) continue;
+      const want = Math.min(26, Math.max(3, Math.round((bb.w * bb.h) / 5200)));
+      let placed = 0, tries = 0;
+      while (placed < want && tries < want * 14 && total < 120) {
+        tries++;
+        const x = bb.x + rng() * bb.w, y = bb.y + rng() * bb.h;
+        if (x < 20 || x > 940 || y < 46 || y > 580) continue;
+        if (!pointInPolyR(p, x, y)) continue;
+        if (!this.openGroundLoose(geo, layout, paths, x, y)) continue;
+        const s = pool[Math.floor(rng() * pool.length)];
+        Sprites.draw(g, s, x, y, s === 'bush' ? 2.4 : 2.6 + rng() * 1.2);
+        placed++; total++;
+      }
+    }
+  },
+
   /* Singapore street furniture along the enemy route: bus stops, lamp
      posts and the odd roadside rain tree — the heartland look. */
   streetFurniture(g, geo, layout, paths, rng) {
@@ -891,6 +1084,9 @@ const Renderer = {
 
     // animated MRT trains on the viaducts
     this.drawTrains(ctx);
+
+    // ambient people near playgrounds / pitches / pools / beaches
+    this.drawPeople(ctx);
 
     // rally point marker
     if (game.rallyPickTower) {
